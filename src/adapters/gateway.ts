@@ -12,6 +12,7 @@ import type { ResolvedKakaoTalkChannel, InboundMessage, KakaoSkillResponse } fro
 import { startRelayStream, type StreamCallbacks } from "../relay/stream.js";
 import { getKakaoRuntime } from "../runtime.js";
 import { sendReply } from "../relay/client.js";
+import { stripMarkdown } from "../kakao/response.js";
 
 export interface GatewayContext {
   account: ResolvedKakaoTalkChannel;
@@ -115,17 +116,28 @@ async function handleInboundMessage(
     cfg,
     dispatcherOptions: {
       deliver: async (payload: { text?: string; mediaUrls?: string[] }) => {
-        if (!payload.text) return;
+        const outputs: KakaoSkillResponse["template"] = { outputs: [] };
 
-        // Build Kakao skill response
+        if (payload.mediaUrls && payload.mediaUrls.length > 0) {
+          for (const url of payload.mediaUrls.slice(0, 3)) {
+            outputs.outputs.push({ simpleImage: { imageUrl: url } });
+          }
+        }
+
+        if (payload.text) {
+          const plainText = stripMarkdown(payload.text);
+          outputs.outputs.push({ simpleText: { text: plainText } });
+        }
+
+        if (outputs.outputs.length === 0) return;
+
+        outputs.outputs = outputs.outputs.slice(0, 3);
+
         const response: KakaoSkillResponse = {
           version: "2.0",
-          template: {
-            outputs: [{ simpleText: { text: payload.text } }],
-          },
+          template: outputs,
         };
 
-        // Send reply via relay server
         try {
           await sendReply(
             { relayUrl, relayToken },

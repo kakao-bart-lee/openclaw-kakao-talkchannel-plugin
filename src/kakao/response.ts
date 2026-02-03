@@ -7,7 +7,93 @@
  * Reference: docs/relay-server-api-spec.md
  */
 
-import type { KakaoSkillResponse, KakaoOutput } from "../types.js";
+import type {
+  KakaoSkillResponse,
+  KakaoOutput,
+  KakaoThumbnail,
+  KakaoButton,
+  KakaoListItem,
+  KakaoItemListItem,
+  KakaoBasicCard,
+  KakaoTextCard,
+  KakaoCommerceCard,
+  KakaoListCard,
+  KakaoItemCard,
+} from "../types.js";
+
+/**
+ * Strip markdown formatting from text for Kakao (which doesn't support markdown)
+ *
+ * Handles:
+ * - Headers (# ## ### etc.)
+ * - Bold (**text** or __text__)
+ * - Italic (*text* or _text_)
+ * - Strikethrough (~~text~~)
+ * - Code blocks (```code``` and `inline code`)
+ * - Links ([text](url)) -> text (url)
+ * - Images (![alt](url)) -> [이미지: alt]
+ * - Blockquotes (> text)
+ * - Horizontal rules (--- or ***)
+ * - List markers (* - + and numbered lists)
+ *
+ * @param text - Text with potential markdown formatting
+ * @returns Plain text with markdown stripped
+ */
+export function stripMarkdown(text: string): string {
+  if (!text) return text;
+
+  let result = text;
+
+  // Remove code blocks first (```lang\ncode\n```)
+  result = result.replace(/```[\s\S]*?```/g, (match) => {
+    const content = match.replace(/```\w*\n?/g, "").replace(/```$/g, "");
+    return content.trim();
+  });
+
+  // Remove inline code (`code`)
+  result = result.replace(/`([^`]+)`/g, "$1");
+
+  // Convert images ![alt](url) -> [이미지: alt]
+  result = result.replace(/!\[([^\]]*)\]\([^)]+\)/g, "[이미지: $1]");
+
+  // Convert links [text](url) -> text (url)
+  result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1 ($2)");
+
+  // Remove headers (# ## ### etc.) - keep the text
+  result = result.replace(/^#{1,6}\s+/gm, "");
+
+  // Remove bold (**text** or __text__)
+  result = result.replace(/\*\*([^*]+)\*\*/g, "$1");
+  result = result.replace(/__([^_]+)__/g, "$1");
+
+  // Remove italic (*text* or _text_) - avoid matching list items at line start
+  result = result.replace(/(?<!\n|\*)\*([^*\n]+)\*(?!\*)/g, "$1");
+  result = result.replace(/(?<!\n|_)_([^_\n]+)_(?!_)/g, "$1");
+
+  // Remove strikethrough (~~text~~)
+  result = result.replace(/~~([^~]+)~~/g, "$1");
+
+  // Remove blockquotes (> text) - keep the text
+  result = result.replace(/^>\s?/gm, "");
+
+  // Remove horizontal rules (---, ***, ___)
+  result = result.replace(/^[-*_]{3,}\s*$/gm, "");
+
+  // Clean up list markers at line start, preserve content
+  // Unordered lists: * - +
+  result = result.replace(/^[\s]*[-*+]\s+/gm, "• ");
+
+  // Ordered lists: 1. 2. etc.
+  result = result.replace(/^[\s]*\d+\.\s+/gm, "");
+
+  // Clean up multiple consecutive newlines
+  result = result.replace(/\n{3,}/g, "\n\n");
+
+  // Trim whitespace
+  result = result.trim();
+
+  return result;
+}
 
 /**
  * Build v2.0 response with simpleText output
@@ -110,3 +196,104 @@ export function buildMultiTextResponse(texts: string[]): KakaoSkillResponse {
     template: { outputs },
   };
 }
+
+export function buildSimpleImageResponse(
+  imageUrl: string,
+  altText?: string
+): KakaoSkillResponse {
+  return {
+    version: "2.0",
+    template: {
+      outputs: [{ simpleImage: { imageUrl, altText } }],
+    },
+  };
+}
+
+export function buildTextCardResponse(
+  options: KakaoTextCard["textCard"]
+): KakaoSkillResponse {
+  return {
+    version: "2.0",
+    template: {
+      outputs: [{ textCard: options }],
+    },
+  };
+}
+
+export function buildBasicCardResponse(
+  options: KakaoBasicCard["basicCard"]
+): KakaoSkillResponse {
+  return {
+    version: "2.0",
+    template: {
+      outputs: [{ basicCard: options }],
+    },
+  };
+}
+
+export function buildCommerceCardResponse(
+  options: KakaoCommerceCard["commerceCard"]
+): KakaoSkillResponse {
+  return {
+    version: "2.0",
+    template: {
+      outputs: [{ commerceCard: options }],
+    },
+  };
+}
+
+export function buildListCardResponse(
+  header: KakaoListItem,
+  items: KakaoListItem[],
+  buttons?: KakaoButton[]
+): KakaoSkillResponse {
+  return {
+    version: "2.0",
+    template: {
+      outputs: [{ listCard: { header, items: items.slice(0, 5), buttons } }],
+    },
+  };
+}
+
+export function buildItemCardResponse(
+  options: KakaoItemCard["itemCard"]
+): KakaoSkillResponse {
+  return {
+    version: "2.0",
+    template: {
+      outputs: [{ itemCard: options }],
+    },
+  };
+}
+
+export function buildCarouselResponse(
+  type: "basicCard" | "commerceCard" | "itemCard" | "textCard",
+  items: KakaoOutput[]
+): KakaoSkillResponse {
+  const carouselItems = items.slice(0, 10).map((item) => {
+    if ("basicCard" in item) return item.basicCard;
+    if ("commerceCard" in item) return item.commerceCard;
+    if ("itemCard" in item) return item.itemCard;
+    if ("textCard" in item) return item.textCard;
+    throw new Error(`Invalid carousel item type for type: ${type}`);
+  });
+
+  return {
+    version: "2.0",
+    template: {
+      outputs: [{ carousel: { type, items: carouselItems } }],
+    },
+  };
+}
+
+export type {
+  KakaoThumbnail,
+  KakaoButton,
+  KakaoListItem,
+  KakaoItemListItem,
+  KakaoBasicCard,
+  KakaoTextCard,
+  KakaoCommerceCard,
+  KakaoListCard,
+  KakaoItemCard,
+};

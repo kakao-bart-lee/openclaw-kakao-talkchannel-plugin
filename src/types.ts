@@ -94,8 +94,151 @@ export interface KakaoSimpleImage {
   };
 }
 
-// MVP: simpleText only, extend later
-export type KakaoOutput = KakaoSimpleText | KakaoSimpleImage;
+export interface KakaoLink {
+  web?: string;
+  mobile?: string;
+  pc?: string;
+}
+
+export interface KakaoThumbnail {
+  imageUrl: string;
+  altText?: string;
+  width?: number;
+  height?: number;
+  link?: KakaoLink;
+  fixedRatio?: boolean;
+}
+
+export interface KakaoButton {
+  label: string;
+  action: "webLink" | "message" | "block" | "share" | "phone" | "operator";
+  webLinkUrl?: string;
+  messageText?: string;
+  blockId?: string;
+  phoneNumber?: string;
+  extra?: Record<string, unknown>;
+}
+
+export interface KakaoTextCard {
+  textCard: {
+    title?: string;
+    description?: string;
+    buttons?: KakaoButton[];
+    buttonLayout?: "horizontal" | "vertical";
+  };
+}
+
+export interface KakaoBasicCard {
+  basicCard: {
+    title?: string;
+    description?: string;
+    thumbnail: KakaoThumbnail;
+    buttons?: KakaoButton[];
+    buttonLayout?: "horizontal" | "vertical";
+  };
+}
+
+export interface KakaoProfile {
+  imageUrl?: string;
+  width?: number;
+  height?: number;
+  title?: string;
+  nickname?: string;
+}
+
+export interface KakaoCommerceCard {
+  commerceCard: {
+    title?: string;
+    description?: string;
+    price: number;
+    currency?: "won";
+    discount?: number;
+    discountRate?: number;
+    discountedPrice?: number;
+    thumbnails: KakaoThumbnail[];
+    profile?: KakaoProfile;
+    buttons?: KakaoButton[];
+    buttonLayout?: "horizontal" | "vertical";
+  };
+}
+
+export interface KakaoListItem {
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  link?: KakaoLink;
+  action?: "block" | "message";
+  blockId?: string;
+  messageText?: string;
+  extra?: Record<string, unknown>;
+}
+
+export interface KakaoListCard {
+  listCard: {
+    header: KakaoListItem;
+    items: KakaoListItem[];
+    buttons?: KakaoButton[];
+    buttonLayout?: "horizontal" | "vertical";
+  };
+}
+
+export interface KakaoHead {
+  title: string;
+}
+
+export interface KakaoImageTitle {
+  title: string;
+  description?: string;
+  imageUrl?: string;
+}
+
+export interface KakaoItemListItem {
+  title: string;
+  description?: string;
+}
+
+export interface KakaoItemListSummary {
+  title: string;
+  description?: string;
+}
+
+export interface KakaoItemCard {
+  itemCard: {
+    thumbnail?: KakaoThumbnail;
+    head?: KakaoHead;
+    profile?: KakaoProfile;
+    imageTitle?: KakaoImageTitle;
+    itemList: KakaoItemListItem[];
+    itemListAlignment?: "left" | "right";
+    itemListSummary?: KakaoItemListSummary;
+    title?: string;
+    description?: string;
+    buttons?: KakaoButton[];
+    buttonLayout?: "horizontal" | "vertical";
+  };
+}
+
+export interface KakaoCarousel {
+  carousel: {
+    type: "basicCard" | "commerceCard" | "itemCard" | "textCard";
+    items: (
+      | KakaoBasicCard["basicCard"]
+      | KakaoCommerceCard["commerceCard"]
+      | KakaoItemCard["itemCard"]
+      | KakaoTextCard["textCard"]
+    )[];
+  };
+}
+
+export type KakaoOutput =
+  | KakaoSimpleText
+  | KakaoSimpleImage
+  | KakaoTextCard
+  | KakaoBasicCard
+  | KakaoCommerceCard
+  | KakaoListCard
+  | KakaoItemCard
+  | KakaoCarousel;
 
 export interface KakaoQuickReply {
   label: string;
@@ -108,6 +251,7 @@ export interface KakaoQuickReply {
 export interface KakaoContextValue {
   name: string;
   lifeSpan: number;
+  ttl?: number;
   params?: Record<string, string>;
 }
 
