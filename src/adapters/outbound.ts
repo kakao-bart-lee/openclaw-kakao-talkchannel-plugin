@@ -8,6 +8,12 @@ export interface OutboundContext {
   talkchannel: ResolvedKakaoTalkChannel;
 }
 
+export interface OutboundMediaContext extends OutboundContext {
+  mediaUrl: string;
+  mediaType?: "image" | "video" | "file";
+  altText?: string;
+}
+
 export interface OutboundResult {
   channel: "kakao-talkchannel";
   success: boolean;
@@ -22,6 +28,7 @@ export interface ChannelOutboundAdapter {
   chunkMode: ChunkMode;
   chunker: (text: string, limit: number, mode?: ChunkMode) => string[];
   sendText: (ctx: OutboundContext) => Promise<OutboundResult>;
+  sendMedia?: (ctx: OutboundMediaContext) => Promise<OutboundResult>;
 }
 
 export function chunkTextForKakao(text: string, limit: number = 400, mode: ChunkMode = "sentence"): string[] {
@@ -36,6 +43,10 @@ export const outboundAdapter: ChannelOutboundAdapter = {
   chunker: chunkTextForKakao,
 
   sendText: async (_ctx: OutboundContext): Promise<OutboundResult> => {
+    return { channel: "kakao-talkchannel", success: true };
+  },
+
+  sendMedia: async (_ctx: OutboundMediaContext): Promise<OutboundResult> => {
     return { channel: "kakao-talkchannel", success: true };
   },
 };

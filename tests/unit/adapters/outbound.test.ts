@@ -266,6 +266,7 @@ describe("ChannelOutboundAdapter - Type Safety", () => {
     expect(adapter.chunkerMode).toBeDefined();
     expect(adapter.chunker).toBeDefined();
     expect(adapter.sendText).toBeDefined();
+    expect(adapter.sendMedia).toBeDefined();
   });
 
   it("should return OutboundResult with correct shape", async () => {
@@ -274,7 +275,68 @@ describe("ChannelOutboundAdapter - Type Safety", () => {
 
     expect(result).toHaveProperty("channel");
     expect(result).toHaveProperty("success");
-    // messageId and error are optional
     expect(typeof result.success).toBe("boolean");
+  });
+});
+
+describe("outboundAdapter.sendMedia", () => {
+  it("should return OutboundResult with success flag", async () => {
+    const ctx = {
+      ...createOutboundContext(),
+      mediaUrl: "https://example.com/image.jpg",
+      mediaType: "image" as const,
+    };
+    const result = await outboundAdapter.sendMedia!(ctx);
+
+    expect(result).toBeDefined();
+    expect(typeof result.success).toBe("boolean");
+  });
+
+  it("should return channel as 'kakao-talkchannel'", async () => {
+    const ctx = {
+      ...createOutboundContext(),
+      mediaUrl: "https://example.com/image.png",
+    };
+    const result = await outboundAdapter.sendMedia!(ctx);
+
+    expect(result.channel).toBe("kakao-talkchannel");
+  });
+
+  it("should accept OutboundMediaContext with all fields", async () => {
+    const ctx = {
+      to: "user_456",
+      text: "Check this image",
+      talkchannelId: "account_789",
+      talkchannel: mockTalkChannel,
+      mediaUrl: "https://example.com/photo.jpg",
+      mediaType: "image" as const,
+      altText: "A beautiful photo",
+    };
+
+    const result = await outboundAdapter.sendMedia!(ctx);
+    expect(result).toBeDefined();
+  });
+
+  it("should handle different media types", async () => {
+    const mediaTypes = ["image", "video", "file"] as const;
+
+    for (const mediaType of mediaTypes) {
+      const ctx = {
+        ...createOutboundContext(),
+        mediaUrl: "https://example.com/media",
+        mediaType,
+      };
+      const result = await outboundAdapter.sendMedia!(ctx);
+      expect(result.channel).toBe("kakao-talkchannel");
+    }
+  });
+
+  it("should be an async function", () => {
+    const ctx = {
+      ...createOutboundContext(),
+      mediaUrl: "https://example.com/image.jpg",
+    };
+    const result = outboundAdapter.sendMedia!(ctx);
+    expect(result instanceof Promise).toBe(true);
   });
 });
