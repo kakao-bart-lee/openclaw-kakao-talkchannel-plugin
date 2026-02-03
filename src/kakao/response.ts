@@ -140,21 +140,11 @@ export function buildErrorResponse(message: string): KakaoSkillResponse {
   };
 }
 
-/**
- * Chunk text for Kakao's 500-char visible limit
- *
- * Splits text at sentence boundaries (. ! ?) to maintain readability.
- * Falls back to hard limit if no sentence boundary found.
- *
- * @param text - Text to chunk
- * @param limit - Character limit per chunk (default: 500)
- * @returns Array of text chunks
- */
-export function chunkTextForKakao(text: string, limit: number = 500): string[] {
-  if (!text || text.length <= limit) {
-    return [text];
-  }
+export type ChunkMode = "sentence" | "newline" | "length";
 
+const DEFAULT_CHUNK_LIMIT = 400;
+
+function chunkBySentence(text: string, limit: number): string[] {
   const chunks: string[] = [];
   let remaining = text;
 
@@ -164,7 +154,6 @@ export function chunkTextForKakao(text: string, limit: number = 500): string[] {
       break;
     }
 
-    // Try to find sentence boundary within limit
     const substring = remaining.substring(0, limit);
     const lastSentenceEnd = Math.max(
       substring.lastIndexOf("."),
@@ -173,17 +162,86 @@ export function chunkTextForKakao(text: string, limit: number = 500): string[] {
     );
 
     if (lastSentenceEnd > 0) {
-      // Found sentence boundary, include the punctuation
       chunks.push(remaining.substring(0, lastSentenceEnd + 1));
       remaining = remaining.substring(lastSentenceEnd + 1).trim();
     } else {
-      // No sentence boundary, hard split at limit
       chunks.push(remaining.substring(0, limit));
       remaining = remaining.substring(limit).trim();
     }
   }
 
   return chunks;
+}
+
+function chunkByNewline(text: string, limit: number): string[] {
+  const paragraphs = text.split(/\n\s*\n/);
+  const chunks: string[] = [];
+  let currentChunk = "";
+
+  for (const paragraph of paragraphs) {
+    const trimmed = paragraph.trim();
+    if (!trimmed) continue;
+
+    if (currentChunk.length === 0) {
+      if (trimmed.length <= limit) {
+        currentChunk = trimmed;
+      } else {
+        chunks.push(...chunkBySentence(trimmed, limit));
+      }
+    } else if (currentChunk.length + 2 + trimmed.length <= limit) {
+      currentChunk += "\n\n" + trimmed;
+    } else {
+      chunks.push(currentChunk);
+      if (trimmed.length <= limit) {
+        currentChunk = trimmed;
+      } else {
+        chunks.push(...chunkBySentence(trimmed, limit));
+        currentChunk = "";
+      }
+    }
+  }
+
+  if (currentChunk) {
+    chunks.push(currentChunk);
+  }
+
+  return chunks;
+}
+
+function chunkByLength(text: string, limit: number): string[] {
+  const chunks: string[] = [];
+  let remaining = text;
+
+  while (remaining.length > 0) {
+    if (remaining.length <= limit) {
+      chunks.push(remaining);
+      break;
+    }
+    chunks.push(remaining.substring(0, limit));
+    remaining = remaining.substring(limit);
+  }
+
+  return chunks;
+}
+
+export function chunkTextForKakao(
+  text: string,
+  limit: number = DEFAULT_CHUNK_LIMIT,
+  mode: ChunkMode = "sentence"
+): string[] {
+  if (!text || text.length <= limit) {
+    return [text];
+  }
+
+  switch (mode) {
+    case "newline":
+      return chunkByNewline(text, limit);
+    case "length":
+      return chunkByLength(text, limit);
+    case "sentence":
+    default:
+      return chunkBySentence(text, limit);
+  }
 }
 
 export function buildMultiTextResponse(texts: string[]): KakaoSkillResponse {

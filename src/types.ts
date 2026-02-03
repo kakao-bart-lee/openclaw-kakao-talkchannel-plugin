@@ -299,6 +299,10 @@ export interface KakaoChannelConfig {
   reconnectDelayMs?: number;
   /** @internal */
   maxReconnectDelayMs?: number;
+
+  // 텍스트 처리 설정
+  textChunkLimit?: number;
+  chunkMode?: "sentence" | "newline" | "length";
 }
 
 export interface ResolvedKakaoTalkChannel {

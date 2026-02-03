@@ -1,5 +1,5 @@
 import type { ResolvedKakaoTalkChannel } from "../types.js";
-import { chunkTextForKakao as chunkTextForKakaoImpl } from "../kakao/response.js";
+import { chunkTextForKakao as chunkTextForKakaoImpl, type ChunkMode } from "../kakao/response.js";
 
 export interface OutboundContext {
   to: string;
@@ -19,18 +19,20 @@ export interface ChannelOutboundAdapter {
   deliveryMode: "direct" | "gateway";
   textChunkLimit: number;
   chunkerMode: "text" | "markdown";
-  chunker: (text: string, limit: number) => string[];
+  chunkMode: ChunkMode;
+  chunker: (text: string, limit: number, mode?: ChunkMode) => string[];
   sendText: (ctx: OutboundContext) => Promise<OutboundResult>;
 }
 
-export function chunkTextForKakao(text: string, limit: number = 500): string[] {
-  return chunkTextForKakaoImpl(text, limit);
+export function chunkTextForKakao(text: string, limit: number = 400, mode: ChunkMode = "sentence"): string[] {
+  return chunkTextForKakaoImpl(text, limit, mode);
 }
 
 export const outboundAdapter: ChannelOutboundAdapter = {
   deliveryMode: "direct",
-  textChunkLimit: 500,
+  textChunkLimit: 400,
   chunkerMode: "text",
+  chunkMode: "sentence",
   chunker: chunkTextForKakao,
 
   sendText: async (_ctx: OutboundContext): Promise<OutboundResult> => {

@@ -146,6 +146,75 @@ describe("Config Schema (Simplified)", () => {
         expect(result.data.allowFrom).toEqual(["user1", "user2"]);
       }
     });
+
+    it("should apply default textChunkLimit of 400", () => {
+      const config = {};
+
+      const result = KakaoAccountConfigSchema.safeParse(config);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.textChunkLimit).toBe(400);
+      }
+    });
+
+    it("should accept custom textChunkLimit within range", () => {
+      const config = {
+        textChunkLimit: 1000,
+      };
+
+      const result = KakaoAccountConfigSchema.safeParse(config);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.textChunkLimit).toBe(1000);
+      }
+    });
+
+    it("should reject textChunkLimit below minimum", () => {
+      const config = {
+        textChunkLimit: 50,
+      };
+
+      const result = KakaoAccountConfigSchema.safeParse(config);
+      expect(result.success).toBe(false);
+    });
+
+    it("should reject textChunkLimit above maximum", () => {
+      const config = {
+        textChunkLimit: 2000,
+      };
+
+      const result = KakaoAccountConfigSchema.safeParse(config);
+      expect(result.success).toBe(false);
+    });
+
+    it("should apply default chunkMode of sentence", () => {
+      const config = {};
+
+      const result = KakaoAccountConfigSchema.safeParse(config);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.chunkMode).toBe("sentence");
+      }
+    });
+
+    it("should accept valid chunkMode values", () => {
+      for (const mode of ["sentence", "newline", "length"]) {
+        const result = KakaoAccountConfigSchema.safeParse({ chunkMode: mode });
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.chunkMode).toBe(mode);
+        }
+      }
+    });
+
+    it("should reject invalid chunkMode", () => {
+      const config = {
+        chunkMode: "invalid",
+      };
+
+      const result = KakaoAccountConfigSchema.safeParse(config);
+      expect(result.success).toBe(false);
+    });
   });
 
   describe("KakaoChannelConfigSchema (wrapper)", () => {

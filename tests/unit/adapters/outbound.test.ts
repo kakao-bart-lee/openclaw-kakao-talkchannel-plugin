@@ -27,7 +27,6 @@ const mockTalkChannel: ResolvedKakaoTalkChannel = {
   config: {
     enabled: true,
     channelId: "channel_123",
-    mode: "direct",
     dmPolicy: "open",
   },
 };
@@ -49,12 +48,16 @@ describe("ChannelOutboundAdapter - Configuration", () => {
     expect(outboundAdapter.deliveryMode).toBe("direct");
   });
 
-  it("should have textChunkLimit set to 500", () => {
-    expect(outboundAdapter.textChunkLimit).toBe(500);
+  it("should have textChunkLimit set to 400", () => {
+    expect(outboundAdapter.textChunkLimit).toBe(400);
   });
 
   it("should have chunkerMode set to 'text'", () => {
     expect(outboundAdapter.chunkerMode).toBe("text");
+  });
+
+  it("should have chunkMode set to 'sentence'", () => {
+    expect(outboundAdapter.chunkMode).toBe("sentence");
   });
 
   it("should have chunker function defined", () => {
@@ -145,13 +148,13 @@ describe("chunkTextForKakao", () => {
     expect(rejoined.replace(/\s+/g, " ")).toContain("Fifth");
   });
 
-  it("should use default limit of 500 when not specified", () => {
+  it("should use default limit of 400 when not specified", () => {
     const text = "a".repeat(600);
     const chunks = chunkTextForKakao(text);
 
     expect(chunks.length).toBeGreaterThan(1);
     chunks.forEach((chunk) => {
-      expect(chunk.length).toBeLessThanOrEqual(500);
+      expect(chunk.length).toBeLessThanOrEqual(400);
     });
   });
 });

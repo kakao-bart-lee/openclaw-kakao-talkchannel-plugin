@@ -124,13 +124,13 @@ describe("Kakao Response Builder", () => {
       expect(chunks[0]).toBe(text);
     });
 
-    it("should use default limit of 500 characters", () => {
+    it("should use default limit of 400 characters (sentence mode)", () => {
       const text = "a".repeat(600);
       const chunks = chunkTextForKakao(text);
 
       expect(chunks.length).toBeGreaterThan(1);
       chunks.forEach((chunk) => {
-        expect(chunk.length).toBeLessThanOrEqual(500);
+        expect(chunk.length).toBeLessThanOrEqual(400);
       });
     });
 
@@ -178,7 +178,7 @@ describe("Kakao Response Builder", () => {
 
       expect(chunks.length).toBeGreaterThan(1);
       chunks.forEach((chunk) => {
-        expect(chunk.length).toBeLessThanOrEqual(500);
+        expect(chunk.length).toBeLessThanOrEqual(400);
       });
     });
 
@@ -204,6 +204,105 @@ describe("Kakao Response Builder", () => {
       chunks.forEach((chunk) => {
         expect(chunk.length).toBeLessThanOrEqual(100);
       });
+    });
+
+    it("should use default limit of 400 characters", () => {
+      const text = "a".repeat(500);
+      const chunks = chunkTextForKakao(text);
+
+      expect(chunks.length).toBeGreaterThan(1);
+      chunks.forEach((chunk) => {
+        expect(chunk.length).toBeLessThanOrEqual(400);
+      });
+    });
+  });
+
+  describe("chunkTextForKakao - newline mode", () => {
+    it("should split at paragraph boundaries when exceeds limit", () => {
+      const text = "First paragraph is quite long.\n\nSecond paragraph is also long.\n\nThird paragraph here.";
+      const chunks = chunkTextForKakao(text, 40, "newline");
+
+      expect(chunks.length).toBeGreaterThan(1);
+      chunks.forEach((chunk) => {
+        expect(chunk.length).toBeLessThanOrEqual(40);
+      });
+    });
+
+    it("should combine short paragraphs within limit", () => {
+      const text = "Short.\n\nAlso short.";
+      const chunks = chunkTextForKakao(text, 100, "newline");
+
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0]).toBe("Short.\n\nAlso short.");
+    });
+
+    it("should fall back to sentence chunking for long paragraphs", () => {
+      const text = "This is a very long sentence that exceeds the limit. Another sentence here.\n\nShort.";
+      const chunks = chunkTextForKakao(text, 60, "newline");
+
+      expect(chunks.length).toBeGreaterThanOrEqual(2);
+      chunks.forEach((chunk) => {
+        expect(chunk.length).toBeLessThanOrEqual(60);
+      });
+    });
+
+    it("should skip empty paragraphs when building chunks", () => {
+      const text = "First paragraph here.\n\nSecond paragraph.\n\nThird one.";
+      const chunks = chunkTextForKakao(text, 30, "newline");
+
+      expect(chunks.length).toBeGreaterThan(1);
+      chunks.forEach((chunk) => {
+        expect(chunk.trim()).not.toBe("");
+      });
+    });
+
+    it("should handle Korean paragraphs", () => {
+      const text = "첫 번째 문단입니다.\n\n두 번째 문단입니다.";
+      const chunks = chunkTextForKakao(text, 100, "newline");
+
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0]).toContain("첫 번째");
+      expect(chunks[0]).toContain("두 번째");
+    });
+  });
+
+  describe("chunkTextForKakao - length mode", () => {
+    it("should split at exact character limit", () => {
+      const text = "abcdefghij";
+      const chunks = chunkTextForKakao(text, 3, "length");
+
+      expect(chunks).toHaveLength(4);
+      expect(chunks[0]).toBe("abc");
+      expect(chunks[1]).toBe("def");
+      expect(chunks[2]).toBe("ghi");
+      expect(chunks[3]).toBe("j");
+    });
+
+    it("should not trim whitespace between chunks", () => {
+      const text = "abc def ghi";
+      const chunks = chunkTextForKakao(text, 4, "length");
+
+      expect(chunks[0]).toBe("abc ");
+      expect(chunks[1]).toBe("def ");
+      expect(chunks[2]).toBe("ghi");
+    });
+
+    it("should handle text shorter than limit", () => {
+      const text = "short";
+      const chunks = chunkTextForKakao(text, 100, "length");
+
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0]).toBe("short");
+    });
+
+    it("should handle Korean text", () => {
+      const text = "가나다라마바사";
+      const chunks = chunkTextForKakao(text, 3, "length");
+
+      expect(chunks).toHaveLength(3);
+      expect(chunks[0]).toBe("가나다");
+      expect(chunks[1]).toBe("라마바");
+      expect(chunks[2]).toBe("사");
     });
   });
 

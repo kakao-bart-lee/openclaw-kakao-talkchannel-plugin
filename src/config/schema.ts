@@ -47,6 +47,18 @@ export const KakaoAccountConfigSchema = z.object({
 
   /** @internal SSE 재연결 최대 지연 시간 (ms) */
   maxReconnectDelayMs: z.number().min(5000).max(60000).default(30000),
+
+  // ─────────────────────────────────────────────────────────────
+  // 텍스트 처리 설정
+  // ─────────────────────────────────────────────────────────────
+  /** 텍스트 청크 최대 길이 (카카오 simpleText: 400자 표시, 1000자 전체) */
+  textChunkLimit: z.number()
+    .min(100, "textChunkLimit은 최소 100자 이상이어야 합니다")
+    .max(1000, "textChunkLimit은 최대 1000자 이하여야 합니다")
+    .default(400),
+
+  /** 텍스트 청킹 모드: sentence(문장 경계), newline(빈 줄), length(정확한 길이) */
+  chunkMode: z.enum(["sentence", "newline", "length"]).default("sentence"),
 });
 
 /**

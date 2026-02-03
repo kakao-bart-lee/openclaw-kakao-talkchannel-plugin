@@ -58,7 +58,7 @@ describe('Plugin Export', () => {
     it('should have outbound adapter', () => {
       expect(kakaoPlugin.outbound).toBeDefined();
       expect(kakaoPlugin.outbound.sendText).toBeTypeOf('function');
-      expect(kakaoPlugin.outbound.textChunkLimit).toBe(500);
+      expect(kakaoPlugin.outbound.textChunkLimit).toBe(400);
     });
     
     it('should have optional adapters', () => {
