@@ -21,6 +21,39 @@ import { getKakaoRuntime } from "../runtime.js";
 import { sendReply } from "../relay/client.js";
 import { stripMarkdown } from "../kakao/response.js";
 
+/**
+ * 메시지 텍스트에서 카카오 카드 JSON 감지
+ * JSON 형태이고 카드 키가 있으면 파싱하여 반환
+ */
+function tryParseKakaoCard(text: string): KakaoChannelData | null {
+  const trimmed = text.trim();
+
+  // JSON 형태가 아니면 스킵
+  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed);
+
+    // 카카오 카드 키 목록
+    const cardKeys = [
+      'textCard', 'basicCard', 'listCard',
+      'commerceCard', 'itemCard', 'carousel',
+      'simpleText', 'simpleImage', 'quickReplies', 'outputs'
+    ];
+
+    // 카드 키가 하나라도 있으면 카드로 인식
+    if (cardKeys.some(key => key in parsed)) {
+      return parsed as KakaoChannelData;
+    }
+  } catch {
+    // JSON 파싱 실패 = 일반 텍스트
+  }
+
+  return null;
+}
+
 function buildOutputsFromChannelData(kakaoData: KakaoChannelData): KakaoOutput[] {
   if (kakaoData.outputs && kakaoData.outputs.length > 0) {
     return kakaoData.outputs;
@@ -178,8 +211,22 @@ async function handleInboundMessage(
           }
 
           if (payload.text) {
-            const plainText = stripMarkdown(payload.text);
-            template.outputs.push({ simpleText: { text: plainText } });
+            // 1️⃣ JSON 카드 감지 시도
+            const cardData = tryParseKakaoCard(payload.text);
+            if (cardData) {
+              // 카드로 변환
+              const cardOutputs = buildOutputsFromChannelData(cardData);
+              template.outputs.push(...cardOutputs);
+
+              // quickReplies도 처리
+              if (cardData.quickReplies && cardData.quickReplies.length > 0) {
+                template.quickReplies = cardData.quickReplies.slice(0, 10);
+              }
+            } else {
+              // 2️⃣ 일반 텍스트
+              const plainText = stripMarkdown(payload.text);
+              template.outputs.push({ simpleText: { text: plainText } });
+            }
           }
         }
 
