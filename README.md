@@ -81,6 +81,56 @@ openclaw plugins install {경로}
 
 ---
 
+## 카드 메시지
+
+에이전트가 JSON 형식으로 응답하면 카카오톡 카드로 자동 변환됩니다.
+
+### 지원 카드 타입
+
+| 타입 | 설명 |
+|------|------|
+| `textCard` | 텍스트 + 버튼 |
+| `basicCard` | 이미지 + 텍스트 + 버튼 |
+| `listCard` | 리스트 형태 |
+| `commerceCard` | 상품 카드 |
+| `simpleImage` | 이미지만 |
+| `carousel` | 여러 카드 슬라이드 |
+
+### 예시: textCard
+
+```json
+{"textCard":{"title":"제목","description":"설명","buttons":[{"label":"버튼","action":"message","messageText":"클릭!"}]}}
+```
+
+### 예시: basicCard
+
+```json
+{"basicCard":{"title":"제목","description":"설명","thumbnail":{"imageUrl":"https://example.com/image.jpg"},"buttons":[{"label":"자세히","action":"webLink","webLinkUrl":"https://example.com"}]}}
+```
+
+### 버튼 액션
+
+| action | 설명 | 필수 필드 |
+|--------|------|-----------|
+| `message` | 메시지 전송 | `messageText` |
+| `webLink` | 웹 링크 | `webLinkUrl` |
+| `phone` | 전화 걸기 | `phoneNumber` |
+| `share` | 공유하기 | - |
+
+### quickReplies (빠른 응답)
+
+```json
+{"textCard":{"title":"선택하세요"},"quickReplies":[{"label":"A","action":"message","messageText":"A"},{"label":"B","action":"message","messageText":"B"}]}
+```
+
+> **참고**: 일반 텍스트는 그대로 전송됩니다. JSON 형식일 때만 카드로 변환됩니다.
+> 
+> **주의**: 카드를 보낼 때는 JSON만 단독으로 보내야 합니다. 텍스트와 섞으면 변환되지 않습니다.
+
+자세한 내용은 [CLAUDE.md](./CLAUDE.md)를 참조하세요.
+
+---
+
 ## 설정 레퍼런스
 
 대부분의 경우 설정이 필요 없습니다. 설치 후 바로 사용 가능합니다.
