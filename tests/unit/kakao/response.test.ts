@@ -20,7 +20,7 @@ import {
   buildItemCardResponse,
   buildCarouselResponse,
 } from "../../../src/kakao/response";
-import type { KakaoSkillResponse } from "../../../src/types";
+import type { KakaoSkillResponse, KakaoChannelData, KakaoOutput } from "../../../src/types";
 
 describe("Kakao Response Builder", () => {
   describe("buildSimpleTextResponse", () => {
@@ -986,6 +986,150 @@ code block
       const carousel = (response.template?.outputs[0] as { carousel: { items: Array<{ buttons: unknown[] }> } }).carousel;
       expect(carousel.items[0].buttons).toHaveLength(1);
       expect(carousel.items[1].buttons).toHaveLength(1);
+    });
+  });
+
+  describe("KakaoChannelData type usage", () => {
+    it("should allow simpleText in channelData", () => {
+      const channelData: KakaoChannelData = {
+        simpleText: { text: "안녕하세요" },
+      };
+
+      expect(channelData.simpleText?.text).toBe("안녕하세요");
+    });
+
+    it("should allow simpleImage in channelData", () => {
+      const channelData: KakaoChannelData = {
+        simpleImage: { imageUrl: "https://example.com/image.png", altText: "이미지" },
+      };
+
+      expect(channelData.simpleImage?.imageUrl).toBe("https://example.com/image.png");
+    });
+
+    it("should allow basicCard in channelData", () => {
+      const channelData: KakaoChannelData = {
+        basicCard: {
+          title: "상품",
+          description: "상품 설명",
+          thumbnail: { imageUrl: "https://example.com/thumb.png" },
+          buttons: [
+            { label: "구매", action: "webLink", webLinkUrl: "https://shop.example.com" },
+          ],
+        },
+      };
+
+      expect(channelData.basicCard?.title).toBe("상품");
+      expect(channelData.basicCard?.buttons).toHaveLength(1);
+    });
+
+    it("should allow listCard in channelData", () => {
+      const channelData: KakaoChannelData = {
+        listCard: {
+          header: { title: "메뉴" },
+          items: [
+            { title: "아메리카노", description: "4,500원" },
+            { title: "라떼", description: "5,000원" },
+          ],
+          buttons: [{ label: "주문하기", action: "message", messageText: "주문" }],
+        },
+      };
+
+      expect(channelData.listCard?.header.title).toBe("메뉴");
+      expect(channelData.listCard?.items).toHaveLength(2);
+    });
+
+    it("should allow carousel in channelData", () => {
+      const channelData: KakaoChannelData = {
+        carousel: {
+          type: "basicCard",
+          items: [
+            { title: "Card 1", thumbnail: { imageUrl: "https://example.com/1.png" } },
+            { title: "Card 2", thumbnail: { imageUrl: "https://example.com/2.png" } },
+          ],
+        },
+      };
+
+      expect(channelData.carousel?.type).toBe("basicCard");
+      expect(channelData.carousel?.items).toHaveLength(2);
+    });
+
+    it("should allow quickReplies in channelData", () => {
+      const channelData: KakaoChannelData = {
+        simpleText: { text: "무엇을 도와드릴까요?" },
+        quickReplies: [
+          { label: "상품 문의", action: "message", messageText: "상품 문의합니다" },
+          { label: "배송 조회", action: "block", blockId: "delivery_block" },
+        ],
+      };
+
+      expect(channelData.quickReplies).toHaveLength(2);
+      expect(channelData.quickReplies?.[0].action).toBe("message");
+      expect(channelData.quickReplies?.[1].action).toBe("block");
+    });
+
+    it("should allow outputs array in channelData", () => {
+      const outputs: KakaoOutput[] = [
+        { simpleText: { text: "첫 번째 메시지" } },
+        { simpleImage: { imageUrl: "https://example.com/image.png" } },
+      ];
+
+      const channelData: KakaoChannelData = { outputs };
+
+      expect(channelData.outputs).toHaveLength(2);
+    });
+
+    it("should allow commerceCard in channelData", () => {
+      const channelData: KakaoChannelData = {
+        commerceCard: {
+          title: "프리미엄 상품",
+          price: 50000,
+          discount: 10000,
+          discountedPrice: 40000,
+          thumbnails: [{ imageUrl: "https://example.com/product.png" }],
+          buttons: [
+            { label: "구매하기", action: "webLink", webLinkUrl: "https://shop.example.com/buy" },
+          ],
+        },
+      };
+
+      expect(channelData.commerceCard?.price).toBe(50000);
+      expect(channelData.commerceCard?.discountedPrice).toBe(40000);
+    });
+
+    it("should allow itemCard in channelData", () => {
+      const channelData: KakaoChannelData = {
+        itemCard: {
+          head: { title: "주문 상세" },
+          itemList: [
+            { title: "상품명", description: "프리미엄 세트" },
+            { title: "수량", description: "1개" },
+            { title: "금액", description: "50,000원" },
+          ],
+          itemListSummary: { title: "합계", description: "50,000원" },
+          buttons: [{ label: "확인", action: "message", messageText: "확인" }],
+        },
+      };
+
+      expect(channelData.itemCard?.head?.title).toBe("주문 상세");
+      expect(channelData.itemCard?.itemList).toHaveLength(3);
+    });
+
+    it("should allow textCard in channelData", () => {
+      const channelData: KakaoChannelData = {
+        textCard: {
+          title: "알림",
+          description: "새로운 메시지가 도착했습니다.",
+          buttons: [
+            { label: "확인", action: "message", messageText: "확인" },
+            { label: "무시", action: "message", messageText: "무시" },
+          ],
+          buttonLayout: "horizontal",
+        },
+      };
+
+      expect(channelData.textCard?.title).toBe("알림");
+      expect(channelData.textCard?.buttons).toHaveLength(2);
+      expect(channelData.textCard?.buttonLayout).toBe("horizontal");
     });
   });
 });

@@ -410,3 +410,31 @@ export interface ParsedKakaoUser {
   plusfriendUserKey?: string;
   isFriend: boolean;
 }
+
+// ============================================================================
+// Channel Data Types (OpenClaw channelData.kakao pattern)
+// ============================================================================
+
+export interface KakaoChannelData {
+  outputs?: KakaoOutput[];
+  quickReplies?: KakaoQuickReply[];
+
+  simpleText?: { text: string };
+  simpleImage?: { imageUrl: string; altText?: string };
+
+  textCard?: KakaoTextCard["textCard"];
+  basicCard?: KakaoBasicCard["basicCard"];
+  commerceCard?: KakaoCommerceCard["commerceCard"];
+  listCard?: KakaoListCard["listCard"];
+  itemCard?: KakaoItemCard["itemCard"];
+
+  carousel?: KakaoCarousel["carousel"];
+}
+
+export interface DeliverPayload {
+  text?: string;
+  mediaUrls?: string[];
+  channelData?: {
+    kakao?: KakaoChannelData;
+  };
+}

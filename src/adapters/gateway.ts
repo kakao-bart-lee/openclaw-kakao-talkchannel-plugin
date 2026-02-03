@@ -8,11 +8,53 @@
  * SSE message → finalizeInboundContext → dispatchReplyWithBufferedBlockDispatcher
  */
 
-import type { ResolvedKakaoTalkChannel, InboundMessage, KakaoSkillResponse } from "../types.js";
+import type {
+  ResolvedKakaoTalkChannel,
+  InboundMessage,
+  KakaoSkillResponse,
+  KakaoOutput,
+  KakaoChannelData,
+  DeliverPayload,
+} from "../types.js";
 import { startRelayStream, type StreamCallbacks } from "../relay/stream.js";
 import { getKakaoRuntime } from "../runtime.js";
 import { sendReply } from "../relay/client.js";
 import { stripMarkdown } from "../kakao/response.js";
+
+function buildOutputsFromChannelData(kakaoData: KakaoChannelData): KakaoOutput[] {
+  if (kakaoData.outputs && kakaoData.outputs.length > 0) {
+    return kakaoData.outputs;
+  }
+
+  const outputs: KakaoOutput[] = [];
+
+  if (kakaoData.simpleText) {
+    outputs.push({ simpleText: kakaoData.simpleText });
+  }
+  if (kakaoData.simpleImage) {
+    outputs.push({ simpleImage: kakaoData.simpleImage });
+  }
+  if (kakaoData.textCard) {
+    outputs.push({ textCard: kakaoData.textCard });
+  }
+  if (kakaoData.basicCard) {
+    outputs.push({ basicCard: kakaoData.basicCard });
+  }
+  if (kakaoData.commerceCard) {
+    outputs.push({ commerceCard: kakaoData.commerceCard });
+  }
+  if (kakaoData.listCard) {
+    outputs.push({ listCard: kakaoData.listCard });
+  }
+  if (kakaoData.itemCard) {
+    outputs.push({ itemCard: kakaoData.itemCard });
+  }
+  if (kakaoData.carousel) {
+    outputs.push({ carousel: kakaoData.carousel });
+  }
+
+  return outputs;
+}
 
 export interface GatewayContext {
   account: ResolvedKakaoTalkChannel;
@@ -115,27 +157,39 @@ async function handleInboundMessage(
     ctx: ctxPayload,
     cfg,
     dispatcherOptions: {
-      deliver: async (payload: { text?: string; mediaUrls?: string[] }) => {
-        const outputs: KakaoSkillResponse["template"] = { outputs: [] };
+      deliver: async (payload: DeliverPayload) => {
+        const template: KakaoSkillResponse["template"] = { outputs: [] };
+        const kakaoData = payload.channelData?.kakao;
 
-        if (payload.mediaUrls && payload.mediaUrls.length > 0) {
-          for (const url of payload.mediaUrls.slice(0, 3)) {
-            outputs.outputs.push({ simpleImage: { imageUrl: url } });
+        if (kakaoData) {
+          const channelOutputs = buildOutputsFromChannelData(kakaoData);
+          template.outputs.push(...channelOutputs);
+
+          if (kakaoData.quickReplies && kakaoData.quickReplies.length > 0) {
+            template.quickReplies = kakaoData.quickReplies.slice(0, 10);
           }
         }
 
-        if (payload.text) {
-          const plainText = stripMarkdown(payload.text);
-          outputs.outputs.push({ simpleText: { text: plainText } });
+        if (template.outputs.length === 0) {
+          if (payload.mediaUrls && payload.mediaUrls.length > 0) {
+            for (const url of payload.mediaUrls.slice(0, 3)) {
+              template.outputs.push({ simpleImage: { imageUrl: url } });
+            }
+          }
+
+          if (payload.text) {
+            const plainText = stripMarkdown(payload.text);
+            template.outputs.push({ simpleText: { text: plainText } });
+          }
         }
 
-        if (outputs.outputs.length === 0) return;
+        if (template.outputs.length === 0) return;
 
-        outputs.outputs = outputs.outputs.slice(0, 3);
+        template.outputs = template.outputs.slice(0, 3);
 
         const response: KakaoSkillResponse = {
           version: "2.0",
-          template: outputs,
+          template,
         };
 
         try {
