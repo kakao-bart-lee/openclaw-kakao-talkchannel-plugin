@@ -109,13 +109,19 @@ export interface KakaoThumbnail {
   fixedRatio?: boolean;
 }
 
+export interface KakaoOsLink {
+  ios?: string;
+  android?: string;
+}
+
 export interface KakaoButton {
   label: string;
-  action: "webLink" | "message" | "block" | "share" | "phone" | "operator";
+  action: "webLink" | "message" | "block" | "share" | "phone" | "operator" | "osLink";
   webLinkUrl?: string;
   messageText?: string;
   blockId?: string;
   phoneNumber?: string;
+  osLink?: KakaoOsLink;
   extra?: Record<string, unknown>;
 }
 

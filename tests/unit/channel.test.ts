@@ -26,7 +26,7 @@ describe("kakaoPlugin", () => {
   it("has correct capabilities", () => {
     expect(kakaoPlugin.capabilities).toEqual({
       chatTypes: ["direct"],
-      media: false,
+      media: true,
       threads: false,
       reactions: false,
       nativeCommands: false,

@@ -1,14 +1,11 @@
-/**
- * Type definition tests - verify type exports and structure
- */
 import { describe, it, expect } from "vitest";
 import type {
   KakaoSkillPayload,
   KakaoSkillResponse,
-  KakaoAccountConfig,
-  ResolvedKakaoAccount,
-  KakaoSimpleText,
-  KakaoOutput,
+  KakaoChannelConfig,
+  ResolvedKakaoTalkChannel,
+  KakaoButton,
+  KakaoOsLink,
   InboundMessage,
 } from "../../src/types";
 
@@ -83,46 +80,65 @@ describe("Kakao Types", () => {
     });
   });
 
-  describe("KakaoAccountConfig", () => {
+  describe("KakaoChannelConfig", () => {
     it("should have required fields", () => {
-      const config: KakaoAccountConfig = {
+      const config: KakaoChannelConfig = {
         enabled: true,
-        channelId: "channel123",
-        mode: "direct",
         dmPolicy: "pairing",
       };
-      expect(config.mode).toBe("direct");
+      expect(config.enabled).toBe(true);
     });
 
     it("should support relay mode fields", () => {
-      const config: KakaoAccountConfig = {
+      const config: KakaoChannelConfig = {
         enabled: true,
         channelId: "channel123",
-        mode: "relay",
         dmPolicy: "pairing",
         relayUrl: "https://relay.example.com",
         relayToken: "token123",
-        reconnectDelayMs: 1000,
-        maxReconnectDelayMs: 30000,
       };
       expect(config.relayUrl).toBeDefined();
     });
   });
 
-  describe("ResolvedKakaoAccount", () => {
-    it("should contain accountId and config", () => {
-      const resolved: ResolvedKakaoAccount = {
-        accountId: "default",
+  describe("ResolvedKakaoTalkChannel", () => {
+    it("should contain talkchannelId and config", () => {
+      const resolved: ResolvedKakaoTalkChannel = {
+        talkchannelId: "default",
         config: {
           enabled: true,
-          channelId: "ch1",
-          mode: "direct",
           dmPolicy: "pairing",
         },
         enabled: true,
         name: "Test Account",
       };
-      expect(resolved.accountId).toBe("default");
+      expect(resolved.talkchannelId).toBe("default");
+    });
+  });
+
+  describe("KakaoButton", () => {
+    it("should support all button actions", () => {
+      const actions: KakaoButton["action"][] = [
+        "webLink", "message", "block", "share", "phone", "operator", "osLink"
+      ];
+      actions.forEach(action => {
+        const button: KakaoButton = { label: "Test", action };
+        expect(button.action).toBe(action);
+      });
+    });
+
+    it("should support osLink with platform-specific URLs", () => {
+      const osLink: KakaoOsLink = {
+        ios: "kakaomap://route?sp=37.5,127.0",
+        android: "intent://route?sp=37.5,127.0#Intent;scheme=kakaomap;end",
+      };
+      const button: KakaoButton = {
+        label: "지도에서 보기",
+        action: "osLink",
+        osLink,
+      };
+      expect(button.osLink?.ios).toContain("kakaomap");
+      expect(button.osLink?.android).toContain("intent");
     });
   });
 
@@ -130,15 +146,14 @@ describe("Kakao Types", () => {
     it("should match relay server spec", () => {
       const msg: InboundMessage = {
         id: "msg_123",
-        timestamp: Date.now(),
+        conversationKey: "conv_123",
         kakaoPayload: {} as KakaoSkillPayload,
         normalized: {
           userId: "user1",
           text: "Hello",
           channelId: "ch1",
         },
-        callbackUrl: "https://bot-api.kakao.com/callback/xxx",
-        callbackExpiresAt: Date.now() + 60000,
+        createdAt: new Date().toISOString(),
       };
       expect(msg.normalized.userId).toBe("user1");
     });

@@ -38,7 +38,7 @@ export const kakaoPlugin = {
     chatTypes: ["direct"] as const,
     reactions: false,
     threads: false,
-    media: false,
+    media: true,
     nativeCommands: false,
     blockStreaming: true,
   },
