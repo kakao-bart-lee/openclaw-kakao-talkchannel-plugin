@@ -270,12 +270,28 @@ export function buildCarouselResponse(
   type: "basicCard" | "commerceCard" | "itemCard" | "textCard",
   items: KakaoOutput[]
 ): KakaoSkillResponse {
-  const carouselItems = items.slice(0, 10).map((item) => {
+  const carouselItems = items.slice(0, 10).map((item, index) => {
+    const itemType = "basicCard" in item ? "basicCard"
+      : "commerceCard" in item ? "commerceCard"
+      : "itemCard" in item ? "itemCard"
+      : "textCard" in item ? "textCard"
+      : null;
+
+    if (!itemType) {
+      throw new Error(`Invalid carousel item at index ${index}: expected card type`);
+    }
+
+    if (itemType !== type) {
+      throw new Error(
+        `Carousel type mismatch at index ${index}: expected '${type}' but got '${itemType}'`
+      );
+    }
+
     if ("basicCard" in item) return item.basicCard;
     if ("commerceCard" in item) return item.commerceCard;
     if ("itemCard" in item) return item.itemCard;
     if ("textCard" in item) return item.textCard;
-    throw new Error(`Invalid carousel item type for type: ${type}`);
+    throw new Error(`Unreachable`);
   });
 
   return {

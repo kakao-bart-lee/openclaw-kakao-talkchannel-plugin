@@ -987,6 +987,37 @@ code block
       expect(carousel.items[0].buttons).toHaveLength(1);
       expect(carousel.items[1].buttons).toHaveLength(1);
     });
+
+    it("should throw error when item type does not match carousel type", () => {
+      const items = [
+        { textCard: { title: "Text Card" } },
+      ];
+
+      expect(() => buildCarouselResponse("basicCard", items)).toThrow(
+        "Carousel type mismatch at index 0: expected 'basicCard' but got 'textCard'"
+      );
+    });
+
+    it("should throw error for invalid item types (simpleText)", () => {
+      const items = [
+        { simpleText: { text: "Not a card" } },
+      ];
+
+      expect(() => buildCarouselResponse("basicCard", items as any)).toThrow(
+        "Invalid carousel item at index 0: expected card type"
+      );
+    });
+
+    it("should throw error when mixed types in carousel", () => {
+      const items = [
+        { basicCard: { title: "Card 1", thumbnail: { imageUrl: "https://example.com/1.png" } } },
+        { textCard: { title: "Card 2" } },
+      ];
+
+      expect(() => buildCarouselResponse("basicCard", items)).toThrow(
+        "Carousel type mismatch at index 1: expected 'basicCard' but got 'textCard'"
+      );
+    });
   });
 
   describe("KakaoChannelData type usage", () => {
