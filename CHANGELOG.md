@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/compare/kakao-talkchannel-v0.2.0...kakao-talkchannel-v0.3.0) (2026-02-03)
+
+
+### Features
+
+* add sendMedia to outbound adapter and API documentation ([#15](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/issues/15)) ([fae5831](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/commit/fae5831e63d180365ca34eda484eb5dde8438a9c))
+* configurable text chunking with multiple modes ([#13](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/issues/13)) ([c634cd8](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/commit/c634cd856e7eab223405980dba2c3d541df5f705)), closes [#11](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/issues/11)
+* 이미지/카드 말풍선 타입 및 마크다운 제거 기능 추가 ([#4](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/issues/4)) ([aa15259](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/commit/aa15259d6f903c4547c9a8943b28083b571fd1ea))
+
+
+### Bug Fixes
+
+* capabilities.media, osLink button, validation constants ([#14](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/issues/14)) ([b35a8ce](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/commit/b35a8cece5d65a60f87c3da9c2b14a6df4173d22))
+
 ## [0.2.0](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/compare/kakao-talkchannel-v0.1.0...kakao-talkchannel-v0.2.0) (2026-02-02)
 
 
