@@ -1,85 +1,124 @@
-# CLAUDE.md
+# Kakao TalkChannel - 에이전트 가이드
 
-이 파일은 Claude Code가 이 저장소에서 작업할 때 참고하는 가이드입니다.
+카카오톡 채널로 다양한 형태의 메시지를 보낼 수 있습니다.
 
-## 프로젝트 개요
+## ⚠️ 중요 규칙
 
-OpenClaw Kakao TalkChannel Plugin은 카카오톡 채널을 OpenClaw에 연결하는 플러그인입니다.
-
-## 커밋 컨벤션
-
-**CRITICAL:** 이 프로젝트는 **release-please**를 사용하므로 **Conventional Commits** 형식을 따릅니다.
-
-### 형식
+**카드 메시지를 보낼 때는 JSON만 단독으로 보내세요.**
 
 ```
-<type>: <한글 메시지>
+❌ 잘못된 예:
+"결과입니다! {"textCard":{"title":"결과"}}"
+
+✅ 올바른 예:
+{"textCard":{"title":"결과","description":"설명"}}
 ```
 
-### 주의사항
+일반 텍스트와 JSON을 섞으면 카드로 변환되지 않습니다.
 
-- **이모지를 사용하지 마세요** - release-please가 커밋 타입을 인식하지 못합니다
-- 타입은 반드시 메시지 **맨 앞**에 위치해야 합니다
+---
 
-### 올바른 예시
+## 말풍선 타입
 
+### 1. 일반 텍스트 (기본)
+그냥 텍스트로 응답하면 됩니다.
 ```
-feat: 새로운 기능 추가
-fix: 버그 수정
-docs: 문서 추가/수정
-refactor: 코드 리팩토링
-test: 테스트 추가/수정
-chore: 빌드, 설정 변경
+안녕하세요! 무엇을 도와드릴까요?
 ```
 
-### 잘못된 예시 (사용 금지)
+### 2. textCard - 텍스트 카드
+텍스트와 버튼을 함께 보여줍니다.
 
-```
-✨ feat: 새로운 기능 추가    # 이모지가 앞에 있으면 안됨
-🐛 fix: 버그 수정            # 이모지가 앞에 있으면 안됨
-feat: 새로운 기능 추가 ✨    # 뒤에 있어도 불필요
-```
-
-### 타입별 버전 범프
-
-- `feat:` - Minor 버전 (0.1.0 → 0.2.0)
-- `fix:` - Patch 버전 (0.1.0 → 0.1.1)
-- `feat!:` 또는 `BREAKING CHANGE:` - Major 버전 (0.1.0 → 1.0.0)
-- 기타 (`docs:`, `refactor:`, `test:`, `chore:`) - CHANGELOG에 기록되지만 버전 범프 없음
-
-## 개발 명령어
-
-```bash
-# 개발
-pnpm dev          # 개발 모드 실행
-pnpm build        # 빌드
-
-# 테스트
-pnpm test         # 테스트 (watch 모드)
-pnpm test:run     # 테스트 실행 (CI용)
-pnpm test:coverage # 커버리지 포함 테스트
-
-# 코드 품질
-pnpm lint         # ESLint 실행
-pnpm format       # Prettier 포맷팅
-pnpm typecheck    # TypeScript 타입 체크
+```json
+{"textCard":{"title":"제목","description":"설명 텍스트","buttons":[{"label":"버튼1","action":"message","messageText":"버튼1 클릭"}]}}
 ```
 
-## 프로젝트 구조
+### 3. basicCard - 이미지 카드
+썸네일 이미지와 텍스트, 버튼을 함께 보여줍니다.
 
-```
-src/
-├── adapters/     # OpenClaw 어댑터 구현
-├── config/       # 설정 스키마
-├── kakao/        # 카카오 API 관련
-├── relay/        # SSE 릴레이 클라이언트
-└── index.ts      # 플러그인 엔트리포인트
-tests/
-├── unit/         # 단위 테스트
-└── integration/  # 통합 테스트
+```json
+{"basicCard":{"title":"제목","description":"설명","thumbnail":{"imageUrl":"https://example.com/image.jpg"},"buttons":[{"label":"자세히 보기","action":"webLink","webLinkUrl":"https://example.com"}]}}
 ```
 
-## 릴리스
+### 4. listCard - 리스트 카드
+여러 항목을 리스트로 보여줍니다.
 
-- `main` 브랜치에 push하면 release-please가 자동으로 PR 생성
-- PR이 머지되면 자동으로 npm에 배포
+```json
+{"listCard":{"header":{"title":"리스트 제목"},"items":[{"title":"항목 1","description":"설명 1"},{"title":"항목 2","description":"설명 2"}],"buttons":[{"label":"더보기","action":"webLink","webLinkUrl":"https://example.com"}]}}
+```
+
+### 5. commerceCard - 커머스 카드
+상품 정보를 보여줍니다.
+
+```json
+{"commerceCard":{"title":"상품명","description":"상품 설명","price":15000,"discount":2000,"thumbnails":[{"imageUrl":"https://example.com/product.jpg"}],"buttons":[{"label":"구매하기","action":"webLink","webLinkUrl":"https://example.com/buy"}]}}
+```
+
+### 6. simpleImage - 이미지만
+이미지만 보내고 싶을 때 사용합니다.
+
+```json
+{"simpleImage":{"imageUrl":"https://example.com/image.jpg","altText":"이미지 설명"}}
+```
+
+### 7. carousel - 캐러셀 (슬라이드)
+여러 카드를 좌우로 넘길 수 있게 보여줍니다.
+
+```json
+{"carousel":{"type":"basicCard","items":[{"title":"카드1","thumbnail":{"imageUrl":"https://example.com/1.jpg"}},{"title":"카드2","thumbnail":{"imageUrl":"https://example.com/2.jpg"}}]}}
+```
+
+---
+
+## 버튼 타입
+
+| action | 설명 | 필수 필드 |
+|--------|------|-----------|
+| `message` | 사용자가 메시지 전송 | `messageText` |
+| `webLink` | 웹페이지 열기 | `webLinkUrl` |
+| `phone` | 전화 걸기 | `phoneNumber` |
+| `share` | 공유하기 | - |
+| `operator` | 상담원 연결 | - |
+
+### 버튼 예시
+```json
+{"label":"홈페이지","action":"webLink","webLinkUrl":"https://example.com"}
+{"label":"전화하기","action":"phone","phoneNumber":"02-1234-5678"}
+{"label":"선택","action":"message","messageText":"이것을 선택합니다"}
+```
+
+---
+
+## quickReplies - 빠른 응답 버튼
+
+카드 하단에 빠른 선택 버튼을 추가합니다. 최대 10개.
+
+```json
+{"textCard":{"title":"어떤 것을 선택하시겠어요?"},"quickReplies":[{"label":"옵션 A","action":"message","messageText":"A 선택"},{"label":"옵션 B","action":"message","messageText":"B 선택"},{"label":"옵션 C","action":"message","messageText":"C 선택"}]}
+```
+
+---
+
+## 언제 카드를 사용하나요?
+
+### 카드 사용 ✅
+- 사용자에게 선택지를 제공할 때
+- 버튼이 필요한 액션이 있을 때
+- 이미지와 함께 정보를 보여줄 때
+- 리스트 형태의 데이터를 보여줄 때
+- 상품/서비스 정보를 보여줄 때
+
+### 일반 텍스트 사용 ✅
+- 일반 대화
+- 간단한 답변
+- 긴 설명이 필요할 때
+- 코드나 로그를 보여줄 때
+
+---
+
+## 제한사항
+
+- 한 번에 최대 3개의 말풍선 (outputs)
+- quickReplies 최대 10개
+- 버튼 최대 3개 (카드당)
+- carousel 아이템 최대 10개
