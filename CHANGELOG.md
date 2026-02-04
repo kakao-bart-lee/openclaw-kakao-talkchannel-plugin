@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/compare/kakao-talkchannel-v0.3.0...kakao-talkchannel-v0.3.1) (2026-02-04)
+
+
+### Bug Fixes
+
+* JSON 형태 카드 메시지 파싱 지원 ([#16](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/issues/16)) ([6ddac0e](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/commit/6ddac0e760d2fef8caec75c157bb3984d8fd1cdb))
+
 ## [0.3.0](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/compare/kakao-talkchannel-v0.2.0...kakao-talkchannel-v0.3.0) (2026-02-03)
 
 
