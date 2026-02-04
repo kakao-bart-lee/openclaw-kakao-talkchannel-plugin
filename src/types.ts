@@ -390,6 +390,7 @@ export interface SSEClientConfig {
   reconnectDelayMs?: number;
   maxReconnectDelayMs?: number;
   timeoutMs?: number;
+  maxRetries?: number;
 }
 
 export interface SendReplyRequest {

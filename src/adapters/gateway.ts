@@ -38,6 +38,11 @@ let cleanupCounter = 0;
 
 export const userActivity = new Map<string, UserActivity>();
 
+/** @internal Reset cleanup counter (for testing only) */
+export function resetCleanupCounter(): void {
+  cleanupCounter = 0;
+}
+
 /**
  * TTL 만료된 항목 정리
  */

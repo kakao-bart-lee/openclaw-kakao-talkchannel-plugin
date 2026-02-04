@@ -25,47 +25,49 @@ export function calculateReconnectDelay(
 }
 
 export function parseSSEChunk(chunk: string): { events: SSEEvent[]; consumed: number } {
-  if (chunk.length === 0) {
-    return { events: [], consumed: 0 };
-  }
-
   const events: SSEEvent[] = [];
   let consumed = 0;
+  let searchFrom = 0;
 
-  let currentEvent: Partial<{ event: string; data: string; id: string }> = {};
-  const lines = chunk.split("\n");
+  // Find complete events by scanning for \n\n boundaries
+  while (true) {
+    const boundary = chunk.indexOf("\n\n", searchFrom);
+    if (boundary === -1) break;
 
-  let pos = 0;
-  for (let idx = 0; idx < lines.length; idx++) {
-    const line = lines[idx];
-    // Position after this line (including the \n delimiter, except for the last segment)
-    pos += line.length + (idx < lines.length - 1 ? 1 : 0);
+    // Extract the event block (from consumed to boundary)
+    const block = chunk.slice(consumed, boundary);
+    const endPos = boundary + 2; // include the \n\n
 
-    if (line === "") {
-      if (currentEvent.event && currentEvent.data) {
-        try {
-          const parsedData = JSON.parse(currentEvent.data);
-          events.push({
-            event: currentEvent.event as SSEEvent["event"],
-            data: parsedData,
-            id: currentEvent.id,
-          } as SSEEvent);
-        } catch {
-          // Skip malformed JSON
-        }
+    let currentEvent: Partial<{ event: string; data: string; id: string }> = {};
+    const lines = block.split("\n");
+
+    for (const line of lines) {
+      if (line === "") continue; // skip empty lines within the block
+
+      if (line.startsWith("event:")) {
+        currentEvent.event = line.slice(6).trim();
+      } else if (line.startsWith("data:")) {
+        currentEvent.data = line.slice(5).trim();
+      } else if (line.startsWith("id:")) {
+        currentEvent.id = line.slice(3).trim();
       }
-      currentEvent = {};
-      consumed = pos;
-      continue;
     }
 
-    if (line.startsWith("event:")) {
-      currentEvent.event = line.slice(6).trim();
-    } else if (line.startsWith("data:")) {
-      currentEvent.data = line.slice(5).trim();
-    } else if (line.startsWith("id:")) {
-      currentEvent.id = line.slice(3).trim();
+    if (currentEvent.event && currentEvent.data) {
+      try {
+        const parsedData = JSON.parse(currentEvent.data);
+        events.push({
+          event: currentEvent.event as SSEEvent["event"],
+          data: parsedData,
+          id: currentEvent.id,
+        } as SSEEvent);
+      } catch {
+        // Skip malformed JSON
+      }
     }
+
+    consumed = endPos;
+    searchFrom = endPos;
   }
 
   return { events, consumed };
@@ -190,9 +192,13 @@ export async function connectSSE(
       handlers.onError?.(err);
 
       reconnectAttempt++;
-      const delay = calculateReconnectDelay(reconnectAttempt, reconnectDelayMs, maxReconnectDelayMs);
       handlers.onReconnect?.(reconnectAttempt);
 
+      if (config.maxRetries !== undefined && reconnectAttempt >= config.maxRetries) {
+        throw new Error(`Max reconnect attempts (${config.maxRetries}) exceeded`);
+      }
+
+      const delay = calculateReconnectDelay(reconnectAttempt, reconnectDelayMs, maxReconnectDelayMs);
       await sleep(delay, abortSignal);
     } finally {
       timeout.clear();

@@ -241,6 +241,15 @@ describe("Relay Stream", () => {
       expect(result).not.toContain("abc123");
       expect(result).not.toContain("def456");
     });
+
+    it("should be safe to call on already-sanitized messages", () => {
+      const msg = "token=secret123 and Bearer abc456";
+      const once = sanitizeTokenFromLog(msg);
+      const twice = sanitizeTokenFromLog(once);
+      // Double-sanitization should not leak anything or produce garbled output
+      expect(twice).not.toContain("secret123");
+      expect(twice).not.toContain("abc456");
+    });
   });
 
   describe("exports", () => {

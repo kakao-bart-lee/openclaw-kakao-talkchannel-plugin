@@ -11,6 +11,7 @@ import {
   cleanupExpiredUserActivity,
   shouldShowSessionWarning,
   tryParseKakaoCard,
+  resetCleanupCounter,
   MAX_USER_ACTIVITY_SIZE,
   USER_ACTIVITY_TTL_MS,
 } from "../../../src/adapters/gateway";
@@ -57,8 +58,9 @@ describe("Gateway Adapter (Simplified)", () => {
       error: vi.fn() as any,
     };
 
-    // Clear userActivity between tests
+    // Clear state between tests
     userActivity.clear();
+    resetCleanupCounter();
   });
 
   describe("startAccount", () => {

@@ -26,11 +26,11 @@ export function sanitizeTokenFromLog(message: string): string {
   // Authorization header with Bearer (match the whole "Authorization: Bearer <token>")
   sanitized = sanitized.replace(/Authorization:\s*Bearer\s+[^\s,;]+/gi, "Authorization: ***");
   // Standalone Bearer token pattern (not preceded by "Authorization:")
-  sanitized = sanitized.replace(/Bearer\s+[^\s,;*]+/gi, "Bearer ***");
-  // sessionToken=<value> pattern (must come before generic token= to avoid double-replace)
+  sanitized = sanitized.replace(/Bearer\s+[^\s,;]+/gi, "Bearer ***");
+  // sessionToken=<value> pattern
   sanitized = sanitized.replace(/sessionToken=[^&\s]+/gi, "sessionToken=***");
-  // token=<value> pattern (query params)
-  sanitized = sanitized.replace(/token=[^&\s*]+/gi, "token=***");
+  // token=<value> pattern (query params) — exclude already-handled sessionToken
+  sanitized = sanitized.replace(/(?<!session)token=[^&\s]+/gi, "token=***");
   return sanitized;
 }
 
@@ -103,6 +103,7 @@ export async function startRelayStream(
       sessionToken: token,
       reconnectDelayMs,
       maxReconnectDelayMs,
+      maxRetries: options.maxRetries,
     },
     {
       onMessage: async (msg) => {
@@ -120,11 +121,6 @@ export async function startRelayStream(
       onReconnect: (attempt) => {
         reconnectCount = attempt;
         logger.info(`[kakao:${talkchannel.talkchannelId}] SSE reconnecting (attempt ${attempt}/${options.maxRetries})`);
-
-        if (reconnectCount >= options.maxRetries) {
-          logger.error(`[kakao:${talkchannel.talkchannelId}] Max reconnect attempts (${options.maxRetries}) exceeded, aborting`);
-          throw new Error(`Max reconnect attempts (${options.maxRetries}) exceeded`);
-        }
       },
       onPairingComplete: (data) => {
         logger.info(`[kakao:${talkchannel.talkchannelId}] Pairing complete: ${data.kakaoUserId}`);

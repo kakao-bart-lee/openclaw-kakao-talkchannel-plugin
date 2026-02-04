@@ -46,9 +46,7 @@ data: {"id":"msg_1","timestamp":1234567890}
       expect(events).toHaveLength(1);
       expect(events[0].event).toBe("message");
       expect(events[0].data).toEqual({ id: "msg_1", timestamp: 1234567890 });
-      // consumed should include all complete events up to the last \n\n
-      expect(consumed).toBeGreaterThan(0);
-      expect(consumed).toBeLessThanOrEqual(chunk.length);
+      expect(consumed).toBe(chunk.length);
     });
 
     it("should parse ping event", () => {
@@ -182,13 +180,42 @@ data: {"id":"msg_1"}`;
     });
   });
 
-  describe("createTimeoutSignal", () => {
-    it("should export createTimeoutSignal behavior via connectSSE", () => {
-      // createTimeoutSignal is tested indirectly through connectSSE.
-      // The key behavior: parent signal abort clears the timeout.
-      // This is verified by the fact that connectSSE returns cleanly
-      // when aborted rather than leaving lingering timers.
-      expect(true).toBe(true);
+  describe("connectSSE maxRetries", () => {
+    it("should throw after maxRetries is exceeded", async () => {
+      const { connectSSE } = await import("../../../src/relay/sse");
+
+      // Mock fetch to always fail, triggering reconnect attempts
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn().mockRejectedValue(new Error("Connection failed"));
+
+      const controller = new AbortController();
+      const onReconnect = vi.fn();
+      const onError = vi.fn();
+
+      try {
+        await expect(
+          connectSSE(
+            {
+              relayUrl: "https://example.com",
+              sessionToken: "test-token",
+              reconnectDelayMs: 1,
+              maxReconnectDelayMs: 1,
+              maxRetries: 3,
+            },
+            {
+              onMessage: vi.fn(),
+              onReconnect,
+              onError,
+            },
+            controller.signal
+          )
+        ).rejects.toThrow("Max reconnect attempts (3) exceeded");
+
+        expect(onReconnect).toHaveBeenCalledTimes(3);
+        expect(onReconnect).toHaveBeenLastCalledWith(3);
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
     });
   });
 });
