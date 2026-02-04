@@ -228,13 +228,20 @@ export interface StartAccountResult {
   expiresIn?: number;
 }
 
-// Store for pairing info to be retrieved later
-let pendingPairingInfo: { pairingCode: string; expiresIn: number } | null = null;
+// Store for pairing info to be retrieved later (keyed by accountId)
+const pendingPairingInfoMap = new Map<string, { pairingCode: string; expiresIn: number }>();
 
-export function getPendingPairingInfo(): { pairingCode: string; expiresIn: number } | null {
-  const info = pendingPairingInfo;
-  pendingPairingInfo = null; // Clear after reading
-  return info;
+export function getPendingPairingInfo(accountId?: string): { pairingCode: string; expiresIn: number } | null {
+  if (accountId) {
+    const info = pendingPairingInfoMap.get(accountId) ?? null;
+    pendingPairingInfoMap.delete(accountId);
+    return info;
+  }
+  // Fallback: return first entry (backwards compat for single-account)
+  const first = pendingPairingInfoMap.entries().next();
+  if (first.done) return null;
+  pendingPairingInfoMap.delete(first.value[0]);
+  return first.value[1];
 }
 
 /**
@@ -724,7 +731,7 @@ async function handleInboundMessage(
   const relayToken = account.config.sessionToken ?? account.config.relayToken ?? "";
 
   // 플러그인 커맨드 체크
-  const messageText = msg.normalized.text.trim();
+  const messageText = msg.normalized.text?.trim() ?? "";
   if (messageText.startsWith('/')) {
     const command = messageText.split(' ')[0].toLowerCase();
     const handler = PLUGIN_COMMANDS[command];
@@ -885,8 +892,8 @@ export const gatewayAdapter = {
 
     const callbacks: StreamCallbacks = {
       onPairingRequired: (pairingCode, expiresIn) => {
-        // Store pairing info for later retrieval
-        pendingPairingInfo = { pairingCode, expiresIn };
+        // Store pairing info keyed by accountId
+        pendingPairingInfoMap.set(accountId, { pairingCode, expiresIn });
 
         // Log the pairing code prominently
         log?.info(`[kakao-talkchannel:${account.talkchannelId}] ========================================`);

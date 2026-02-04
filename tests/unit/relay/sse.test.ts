@@ -104,7 +104,7 @@ data: {"id":"msg_2"}
       expect(events[2].event).toBe("message");
     });
 
-    it("should skip malformed JSON", () => {
+    it("should skip malformed JSON and report parseErrors", () => {
       const chunk = `event: message
 data: {invalid json}
 
@@ -112,10 +112,22 @@ event: message
 data: {"id":"msg_1"}
 
 `;
-      const { events } = parseSSEChunk(chunk);
+      const { events, parseErrors } = parseSSEChunk(chunk);
 
       expect(events).toHaveLength(1);
       expect(events[0].data).toEqual({ id: "msg_1" });
+      expect(parseErrors).toBe(1);
+    });
+
+    it("should return zero parseErrors for valid events", () => {
+      const chunk = `event: message
+data: {"id":"msg_1"}
+
+`;
+      const { events, parseErrors } = parseSSEChunk(chunk);
+
+      expect(events).toHaveLength(1);
+      expect(parseErrors).toBe(0);
     });
 
     it("should handle incomplete events (not consumed)", () => {

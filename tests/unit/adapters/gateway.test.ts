@@ -12,6 +12,7 @@ import {
   shouldShowSessionWarning,
   tryParseKakaoCard,
   resetCleanupCounter,
+  getPendingPairingInfo,
   MAX_USER_ACTIVITY_SIZE,
   USER_ACTIVITY_TTL_MS,
 } from "../../../src/adapters/gateway";
@@ -299,6 +300,109 @@ describe("Gateway Adapter (Simplified)", () => {
 
     it("should return null for invalid JSON starting with {", () => {
       expect(tryParseKakaoCard('{invalid json}')).toBeNull();
+    });
+  });
+
+  describe("getPendingPairingInfo", () => {
+    it("should return null when no pairing info exists", () => {
+      expect(getPendingPairingInfo("account1")).toBeNull();
+    });
+
+    it("should return null for unknown accountId", () => {
+      // Even after another account has pairing info, unknown account returns null
+      expect(getPendingPairingInfo("nonexistent")).toBeNull();
+    });
+
+    it("should return and clear pairing info by accountId", async () => {
+      // Trigger pairing via startAccount (startRelayStream is mocked)
+      const { startRelayStream } = await import("../../../src/relay/stream.js");
+      const mockStartRelayStream = vi.mocked(startRelayStream);
+
+      // Capture the callbacks passed to startRelayStream
+      mockStartRelayStream.mockImplementation(
+        async (_account, _onMessage, _signal, _opts, callbacks) => {
+          callbacks?.onPairingRequired?.("CODE-1234", 300);
+        }
+      );
+
+      const ctx = {
+        account: mockAccount,
+        accountId: "test-account",
+        cfg: {},
+        abortSignal: new AbortController().signal,
+        log: mockLog,
+      };
+
+      await gatewayAdapter.startAccount(ctx as any);
+
+      // Should return pairing info for the correct accountId
+      const info = getPendingPairingInfo("test-account");
+      expect(info).toEqual({ pairingCode: "CODE-1234", expiresIn: 300 });
+
+      // Should be cleared after reading
+      expect(getPendingPairingInfo("test-account")).toBeNull();
+    });
+
+    it("should isolate pairing info between accounts", async () => {
+      const { startRelayStream } = await import("../../../src/relay/stream.js");
+      const mockStartRelayStream = vi.mocked(startRelayStream);
+
+      // First account
+      mockStartRelayStream.mockImplementationOnce(
+        async (_account, _onMessage, _signal, _opts, callbacks) => {
+          callbacks?.onPairingRequired?.("CODE-AAAA", 300);
+        }
+      );
+
+      await gatewayAdapter.startAccount({
+        account: mockAccount,
+        accountId: "account-a",
+        cfg: {},
+        abortSignal: new AbortController().signal,
+        log: mockLog,
+      } as any);
+
+      // Second account
+      mockStartRelayStream.mockImplementationOnce(
+        async (_account, _onMessage, _signal, _opts, callbacks) => {
+          callbacks?.onPairingRequired?.("CODE-BBBB", 600);
+        }
+      );
+
+      await gatewayAdapter.startAccount({
+        account: mockAccount,
+        accountId: "account-b",
+        cfg: {},
+        abortSignal: new AbortController().signal,
+        log: mockLog,
+      } as any);
+
+      // Each account should get its own pairing info
+      expect(getPendingPairingInfo("account-a")).toEqual({ pairingCode: "CODE-AAAA", expiresIn: 300 });
+      expect(getPendingPairingInfo("account-b")).toEqual({ pairingCode: "CODE-BBBB", expiresIn: 600 });
+    });
+
+    it("should fallback to first entry when no accountId provided", async () => {
+      const { startRelayStream } = await import("../../../src/relay/stream.js");
+      const mockStartRelayStream = vi.mocked(startRelayStream);
+
+      mockStartRelayStream.mockImplementationOnce(
+        async (_account, _onMessage, _signal, _opts, callbacks) => {
+          callbacks?.onPairingRequired?.("CODE-FALLBACK", 120);
+        }
+      );
+
+      await gatewayAdapter.startAccount({
+        account: mockAccount,
+        accountId: "some-account",
+        cfg: {},
+        abortSignal: new AbortController().signal,
+        log: mockLog,
+      } as any);
+
+      // No accountId → returns first entry
+      const info = getPendingPairingInfo();
+      expect(info).toEqual({ pairingCode: "CODE-FALLBACK", expiresIn: 120 });
     });
   });
 });

@@ -24,10 +24,11 @@ export function calculateReconnectDelay(
   return Math.floor(cappedDelay + jitter);
 }
 
-export function parseSSEChunk(chunk: string): { events: SSEEvent[]; consumed: number } {
+export function parseSSEChunk(chunk: string): { events: SSEEvent[]; consumed: number; parseErrors: number } {
   const events: SSEEvent[] = [];
   let consumed = 0;
   let searchFrom = 0;
+  let parseErrors = 0;
 
   // Find complete events by scanning for \n\n boundaries
   while (true) {
@@ -62,7 +63,7 @@ export function parseSSEChunk(chunk: string): { events: SSEEvent[]; consumed: nu
           id: currentEvent.id,
         } as SSEEvent);
       } catch {
-        // Skip malformed JSON
+        parseErrors++;
       }
     }
 
@@ -70,7 +71,7 @@ export function parseSSEChunk(chunk: string): { events: SSEEvent[]; consumed: nu
     searchFrom = endPos;
   }
 
-  return { events, consumed };
+  return { events, consumed, parseErrors };
 }
 
 function createTimeoutSignal(
@@ -79,17 +80,24 @@ function createTimeoutSignal(
 ): { signal: AbortSignal; clear: () => void } {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  let parentAbortHandler: (() => void) | undefined;
 
   if (parentSignal) {
-    parentSignal.addEventListener("abort", () => {
+    parentAbortHandler = () => {
       clearTimeout(timeoutId);
       controller.abort();
-    }, { once: true });
+    };
+    parentSignal.addEventListener("abort", parentAbortHandler, { once: true });
   }
 
   return {
     signal: controller.signal,
-    clear: () => clearTimeout(timeoutId),
+    clear: () => {
+      clearTimeout(timeoutId);
+      if (parentSignal && parentAbortHandler) {
+        parentSignal.removeEventListener("abort", parentAbortHandler);
+      }
+    },
   };
 }
 
@@ -145,43 +153,51 @@ export async function connectSSE(
       handlers.onConnected?.();
 
       const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
+      try {
+        const decoder = new TextDecoder();
+        let buffer = "";
 
-      while (!abortSignal.aborted) {
-        const { done, value } = await reader.read();
+        while (!abortSignal.aborted) {
+          const { done, value } = await reader.read();
 
-        if (done) {
-          break;
-        }
-
-        buffer += decoder.decode(value, { stream: true });
-        const { events, consumed } = parseSSEChunk(buffer);
-
-        if (consumed > 0) {
-          buffer = buffer.slice(consumed);
-        }
-
-        for (const event of events) {
-          if (event.id) {
-            lastEventId = event.id;
+          if (done) {
+            break;
           }
 
-          if (event.event === "message") {
-            try {
-              await handlers.onMessage(event.data);
-            } catch (msgError) {
-              const err = msgError instanceof Error ? msgError : new Error(String(msgError));
-              handlers.onError?.(err);
+          buffer += decoder.decode(value, { stream: true });
+          const { events, consumed, parseErrors } = parseSSEChunk(buffer);
+
+          if (consumed > 0) {
+            buffer = buffer.slice(consumed);
+          }
+
+          if (parseErrors > 0) {
+            handlers.onError?.(new Error(`Skipped ${parseErrors} SSE event(s) with malformed JSON`));
+          }
+
+          for (const event of events) {
+            if (event.id) {
+              lastEventId = event.id;
             }
-          } else if (event.event === "error") {
-            handlers.onError?.(new Error(event.data.message));
-          } else if (event.event === "pairing_complete") {
-            handlers.onPairingComplete?.(event.data);
-          } else if (event.event === "pairing_expired") {
-            handlers.onPairingExpired?.(event.data.reason);
+
+            if (event.event === "message") {
+              try {
+                await handlers.onMessage(event.data);
+              } catch (msgError) {
+                const err = msgError instanceof Error ? msgError : new Error(String(msgError));
+                handlers.onError?.(err);
+              }
+            } else if (event.event === "error") {
+              handlers.onError?.(new Error(event.data.message));
+            } else if (event.event === "pairing_complete") {
+              handlers.onPairingComplete?.(event.data);
+            } else if (event.event === "pairing_expired") {
+              handlers.onPairingExpired?.(event.data.reason);
+            }
           }
         }
+      } finally {
+        reader.cancel().catch(() => {});
       }
     } catch (error) {
       if (abortSignal.aborted) {
