@@ -6,6 +6,14 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ResolvedKakaoTalkChannel } from "../../../src/types";
+import {
+  userActivity,
+  cleanupExpiredUserActivity,
+  shouldShowSessionWarning,
+  tryParseKakaoCard,
+  MAX_USER_ACTIVITY_SIZE,
+  USER_ACTIVITY_TTL_MS,
+} from "../../../src/adapters/gateway";
 
 vi.mock("../../../src/runtime.js", () => ({
   getKakaoRuntime: () => ({
@@ -48,6 +56,9 @@ describe("Gateway Adapter (Simplified)", () => {
       info: vi.fn() as any,
       error: vi.fn() as any,
     };
+
+    // Clear userActivity between tests
+    userActivity.clear();
   });
 
   describe("startAccount", () => {
@@ -139,6 +150,153 @@ describe("Gateway Adapter (Simplified)", () => {
       await gatewayAdapter.stopAccount(ctx);
 
       expect(true).toBe(true);
+    });
+  });
+
+  describe("userActivity TTL management", () => {
+    it("should clean up expired entries", () => {
+      // Add entry with old timestamp
+      userActivity.set("old-user", {
+        messageCount: 10,
+        lastWarningCount: 0,
+        lastAccessedAt: Date.now() - USER_ACTIVITY_TTL_MS - 1000,
+      });
+
+      // Add fresh entry
+      userActivity.set("fresh-user", {
+        messageCount: 5,
+        lastWarningCount: 0,
+        lastAccessedAt: Date.now(),
+      });
+
+      const removed = cleanupExpiredUserActivity();
+
+      expect(removed).toBe(1);
+      expect(userActivity.has("old-user")).toBe(false);
+      expect(userActivity.has("fresh-user")).toBe(true);
+    });
+
+    it("should respect MAX_USER_ACTIVITY_SIZE constant", () => {
+      expect(MAX_USER_ACTIVITY_SIZE).toBe(10000);
+    });
+
+    it("should respect USER_ACTIVITY_TTL_MS constant (24 hours)", () => {
+      expect(USER_ACTIVITY_TTL_MS).toBe(24 * 60 * 60 * 1000);
+    });
+  });
+
+  describe("shouldShowSessionWarning", () => {
+    it("should not warn before 50 messages", () => {
+      for (let i = 1; i < 50; i++) {
+        expect(shouldShowSessionWarning("user1")).toBe(false);
+      }
+    });
+
+    it("should warn at exactly 50 messages", () => {
+      for (let i = 1; i < 50; i++) {
+        shouldShowSessionWarning("user2");
+      }
+      expect(shouldShowSessionWarning("user2")).toBe(true); // 50th
+    });
+
+    it("should not warn at 51 messages", () => {
+      for (let i = 1; i <= 50; i++) {
+        shouldShowSessionWarning("user3");
+      }
+      expect(shouldShowSessionWarning("user3")).toBe(false); // 51st
+    });
+
+    it("should warn again at 100 messages", () => {
+      for (let i = 1; i < 100; i++) {
+        shouldShowSessionWarning("user4");
+      }
+      expect(shouldShowSessionWarning("user4")).toBe(true); // 100th
+    });
+
+    it("should update lastAccessedAt timestamp", () => {
+      const before = Date.now();
+      shouldShowSessionWarning("user5");
+      const after = Date.now();
+
+      const activity = userActivity.get("user5")!;
+      expect(activity.lastAccessedAt).toBeGreaterThanOrEqual(before);
+      expect(activity.lastAccessedAt).toBeLessThanOrEqual(after);
+    });
+  });
+
+  describe("tryParseKakaoCard", () => {
+    it("should parse valid textCard", () => {
+      const json = '{"textCard":{"title":"Test","description":"Desc"}}';
+      const result = tryParseKakaoCard(json);
+      expect(result).not.toBeNull();
+      expect(result!.textCard).toBeDefined();
+      expect(result!.textCard!.title).toBe("Test");
+    });
+
+    it("should parse valid basicCard", () => {
+      const json = '{"basicCard":{"title":"Test","thumbnail":{"imageUrl":"https://example.com/img.jpg"}}}';
+      const result = tryParseKakaoCard(json);
+      expect(result).not.toBeNull();
+      expect(result!.basicCard).toBeDefined();
+    });
+
+    it("should reject card key with non-object value", () => {
+      const json = '{"textCard":"not an object"}';
+      const result = tryParseKakaoCard(json);
+      expect(result).toBeNull();
+    });
+
+    it("should reject card key with array value", () => {
+      const json = '{"textCard":[1,2,3]}';
+      const result = tryParseKakaoCard(json);
+      expect(result).toBeNull();
+    });
+
+    it("should reject card key with null value", () => {
+      const json = '{"textCard":null}';
+      const result = tryParseKakaoCard(json);
+      expect(result).toBeNull();
+    });
+
+    it("should accept outputs as array", () => {
+      const json = '{"outputs":[{"simpleText":{"text":"hello"}}]}';
+      const result = tryParseKakaoCard(json);
+      expect(result).not.toBeNull();
+      expect(result!.outputs).toHaveLength(1);
+    });
+
+    it("should reject outputs as non-array", () => {
+      const json = '{"outputs":"not an array"}';
+      const result = tryParseKakaoCard(json);
+      expect(result).toBeNull();
+    });
+
+    it("should accept quickReplies as array", () => {
+      const json = '{"quickReplies":[{"label":"test","action":"message","messageText":"hi"}]}';
+      const result = tryParseKakaoCard(json);
+      expect(result).not.toBeNull();
+    });
+
+    it("should reject quickReplies as non-array", () => {
+      const json = '{"quickReplies":"not an array"}';
+      const result = tryParseKakaoCard(json);
+      expect(result).toBeNull();
+    });
+
+    it("should return null for non-JSON text", () => {
+      expect(tryParseKakaoCard("hello world")).toBeNull();
+    });
+
+    it("should return null for JSON without card keys", () => {
+      expect(tryParseKakaoCard('{"name":"test"}')).toBeNull();
+    });
+
+    it("should return null for non-object JSON", () => {
+      expect(tryParseKakaoCard('[1,2,3]')).toBeNull();
+    });
+
+    it("should return null for invalid JSON starting with {", () => {
+      expect(tryParseKakaoCard('{invalid json}')).toBeNull();
     });
   });
 });

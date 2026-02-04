@@ -6,6 +6,7 @@ import type {
 import {
   sendReply,
   healthCheck,
+  parseErrorBody,
 } from "../../../src/relay/client";
 
 global.fetch = vi.fn();
@@ -110,6 +111,30 @@ describe("Relay Client", () => {
       expect(body.messageId).toBe("msg_789");
       expect(body.response).toEqual(response);
     });
+
+    // New tests: input validation
+    it("should throw error for empty messageId", async () => {
+      const response: KakaoSkillResponse = { version: "2.0" };
+      await expect(sendReply(baseConfig, "", response)).rejects.toThrow(
+        /messageId is required/
+      );
+    });
+
+    it("should throw error for empty relayUrl", async () => {
+      const response: KakaoSkillResponse = { version: "2.0" };
+      const config = { ...baseConfig, relayUrl: "" };
+      await expect(sendReply(config, "msg_1", response)).rejects.toThrow(
+        /relayUrl is required/
+      );
+    });
+
+    it("should throw error for empty relayToken", async () => {
+      const response: KakaoSkillResponse = { version: "2.0" };
+      const config = { ...baseConfig, relayToken: "" };
+      await expect(sendReply(config, "msg_1", response)).rejects.toThrow(
+        /relayToken is required/
+      );
+    });
   });
 
   describe("healthCheck", () => {
@@ -167,6 +192,40 @@ describe("Relay Client", () => {
 
       expect(result.ok).toBe(false);
       expect(result.error).toContain("Connection refused");
+    });
+  });
+
+  describe("parseErrorBody", () => {
+    it("should extract string error", () => {
+      expect(parseErrorBody({ error: "Something went wrong" })).toBe("Something went wrong");
+    });
+
+    it("should extract nested error.message", () => {
+      expect(parseErrorBody({ error: { message: "Nested error" } })).toBe("Nested error");
+    });
+
+    it("should extract top-level message", () => {
+      expect(parseErrorBody({ message: "Top level message" })).toBe("Top level message");
+    });
+
+    it("should return 'Unknown error' for null", () => {
+      expect(parseErrorBody(null)).toBe("Unknown error");
+    });
+
+    it("should return 'Unknown error' for undefined", () => {
+      expect(parseErrorBody(undefined)).toBe("Unknown error");
+    });
+
+    it("should return 'Unknown error' for empty object", () => {
+      expect(parseErrorBody({})).toBe("Unknown error");
+    });
+
+    it("should convert non-object to string", () => {
+      expect(parseErrorBody("raw string error")).toBe("raw string error");
+    });
+
+    it("should handle number input", () => {
+      expect(parseErrorBody(42)).toBe("42");
     });
   });
 

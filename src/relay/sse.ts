@@ -24,13 +24,23 @@ export function calculateReconnectDelay(
   return Math.floor(cappedDelay + jitter);
 }
 
-export function parseSSEChunk(chunk: string): SSEEvent[] {
+export function parseSSEChunk(chunk: string): { events: SSEEvent[]; consumed: number } {
+  if (chunk.length === 0) {
+    return { events: [], consumed: 0 };
+  }
+
   const events: SSEEvent[] = [];
-  const lines = chunk.split("\n");
+  let consumed = 0;
 
   let currentEvent: Partial<{ event: string; data: string; id: string }> = {};
+  const lines = chunk.split("\n");
 
-  for (const line of lines) {
+  let pos = 0;
+  for (let idx = 0; idx < lines.length; idx++) {
+    const line = lines[idx];
+    // Position after this line (including the \n delimiter, except for the last segment)
+    pos += line.length + (idx < lines.length - 1 ? 1 : 0);
+
     if (line === "") {
       if (currentEvent.event && currentEvent.data) {
         try {
@@ -45,6 +55,7 @@ export function parseSSEChunk(chunk: string): SSEEvent[] {
         }
       }
       currentEvent = {};
+      consumed = pos;
       continue;
     }
 
@@ -57,7 +68,7 @@ export function parseSSEChunk(chunk: string): SSEEvent[] {
     }
   }
 
-  return events;
+  return { events, consumed };
 }
 
 function createTimeoutSignal(
@@ -68,7 +79,10 @@ function createTimeoutSignal(
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   if (parentSignal) {
-    parentSignal.addEventListener("abort", () => controller.abort(), { once: true });
+    parentSignal.addEventListener("abort", () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    }, { once: true });
   }
 
   return {
@@ -140,11 +154,10 @@ export async function connectSSE(
         }
 
         buffer += decoder.decode(value, { stream: true });
-        const events = parseSSEChunk(buffer);
+        const { events, consumed } = parseSSEChunk(buffer);
 
-        const lastNewline = buffer.lastIndexOf("\n\n");
-        if (lastNewline !== -1) {
-          buffer = buffer.slice(lastNewline + 2);
+        if (consumed > 0) {
+          buffer = buffer.slice(consumed);
         }
 
         for (const event of events) {
@@ -153,7 +166,12 @@ export async function connectSSE(
           }
 
           if (event.event === "message") {
-            await handlers.onMessage(event.data);
+            try {
+              await handlers.onMessage(event.data);
+            } catch (msgError) {
+              const err = msgError instanceof Error ? msgError : new Error(String(msgError));
+              handlers.onError?.(err);
+            }
           } else if (event.event === "error") {
             handlers.onError?.(new Error(event.data.message));
           } else if (event.event === "pairing_complete") {

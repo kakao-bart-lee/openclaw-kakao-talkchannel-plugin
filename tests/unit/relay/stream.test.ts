@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { ResolvedKakaoAccount } from "../../../src/types";
+import type { ResolvedKakaoTalkChannel } from "../../../src/types";
+import { sanitizeTokenFromLog } from "../../../src/relay/stream";
 
 vi.mock("../../../src/runtime.js", () => ({
   getKakaoRuntime: () => ({
@@ -44,13 +45,11 @@ describe("Relay Stream", () => {
         },
       });
 
-      const mockAccount: ResolvedKakaoAccount = {
-        accountId: "test",
+      const mockAccount: ResolvedKakaoTalkChannel = {
+        talkchannelId: "test",
         enabled: true,
-        mode: "relay",
         config: {
           enabled: true,
-          mode: "relay",
           dmPolicy: "open",
         },
       };
@@ -92,13 +91,11 @@ describe("Relay Stream", () => {
         },
       });
 
-      const mockAccount: ResolvedKakaoAccount = {
-        accountId: "test",
+      const mockAccount: ResolvedKakaoTalkChannel = {
+        talkchannelId: "test",
         enabled: true,
-        mode: "relay",
         config: {
           enabled: true,
-          mode: "relay",
           dmPolicy: "open",
         },
       };
@@ -128,13 +125,11 @@ describe("Relay Stream", () => {
       const { startRelayStream } = await import("../../../src/relay/stream.js");
       const { createSession } = await import("../../../src/relay/session.js");
 
-      const mockAccount: ResolvedKakaoAccount = {
-        accountId: "test",
+      const mockAccount: ResolvedKakaoTalkChannel = {
+        talkchannelId: "test",
         enabled: true,
-        mode: "relay",
         config: {
           enabled: true,
-          mode: "relay",
           sessionToken: "existing_session_token",
           dmPolicy: "open",
         },
@@ -159,13 +154,11 @@ describe("Relay Stream", () => {
       const { startRelayStream } = await import("../../../src/relay/stream.js");
       const { createSession } = await import("../../../src/relay/session.js");
 
-      const mockAccount: ResolvedKakaoAccount = {
-        accountId: "test",
+      const mockAccount: ResolvedKakaoTalkChannel = {
+        talkchannelId: "test",
         enabled: true,
-        mode: "relay",
         config: {
           enabled: true,
-          mode: "relay",
           relayToken: "config_relay_token",
           dmPolicy: "open",
         },
@@ -198,13 +191,11 @@ describe("Relay Stream", () => {
         },
       });
 
-      const mockAccount: ResolvedKakaoAccount = {
-        accountId: "test",
+      const mockAccount: ResolvedKakaoTalkChannel = {
+        talkchannelId: "test",
         enabled: true,
-        mode: "relay",
         config: {
           enabled: true,
-          mode: "relay",
           dmPolicy: "open",
         },
       };
@@ -215,6 +206,40 @@ describe("Relay Stream", () => {
       await expect(
         startRelayStream(mockAccount, mockOnMessage, controller.signal)
       ).rejects.toThrow("Failed to create session: Connection refused");
+    });
+  });
+
+  describe("sanitizeTokenFromLog", () => {
+    it("should mask Bearer token pattern", () => {
+      const msg = "Error: Bearer abc123def456 is invalid";
+      expect(sanitizeTokenFromLog(msg)).toBe("Error: Bearer *** is invalid");
+    });
+
+    it("should mask token= query parameter", () => {
+      const msg = "URL: https://example.com?token=secret123&foo=bar";
+      expect(sanitizeTokenFromLog(msg)).toBe("URL: https://example.com?token=***&foo=bar");
+    });
+
+    it("should mask sessionToken= pattern", () => {
+      const msg = "Config: sessionToken=my-secret-token&other=value";
+      expect(sanitizeTokenFromLog(msg)).toBe("Config: sessionToken=***&other=value");
+    });
+
+    it("should mask Authorization header pattern", () => {
+      const msg = "Header: Authorization: Bearer xyz789";
+      expect(sanitizeTokenFromLog(msg)).toBe("Header: Authorization: ***");
+    });
+
+    it("should handle messages with no tokens", () => {
+      const msg = "Normal log message without tokens";
+      expect(sanitizeTokenFromLog(msg)).toBe("Normal log message without tokens");
+    });
+
+    it("should mask multiple token patterns in single message", () => {
+      const msg = "token=abc123 and Bearer def456";
+      const result = sanitizeTokenFromLog(msg);
+      expect(result).not.toContain("abc123");
+      expect(result).not.toContain("def456");
     });
   });
 

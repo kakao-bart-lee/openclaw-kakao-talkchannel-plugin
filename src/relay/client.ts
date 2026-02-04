@@ -32,8 +32,24 @@ function createTimeoutSignal(timeoutMs: number): {
   };
 }
 
-function parseErrorBody(body: unknown): string {
-  return (body as Record<string, unknown>)?.error as string || "Unknown error";
+export function parseErrorBody(body: unknown): string {
+  if (body === null || body === undefined) {
+    return "Unknown error";
+  }
+  if (!isObject(body)) {
+    return String(body);
+  }
+  const error = body.error;
+  if (typeof error === "string") {
+    return error;
+  }
+  if (isObject(error) && typeof error.message === "string") {
+    return error.message;
+  }
+  if (typeof body.message === "string") {
+    return body.message;
+  }
+  return "Unknown error";
 }
 
 export async function sendReply(
@@ -41,6 +57,15 @@ export async function sendReply(
   messageId: string,
   response: KakaoSkillResponse
 ): Promise<SendReplyResponse> {
+  if (!messageId || typeof messageId !== "string") {
+    throw new Error("sendReply: messageId is required and must be a non-empty string");
+  }
+  if (!config.relayUrl || typeof config.relayUrl !== "string") {
+    throw new Error("sendReply: relayUrl is required and must be a non-empty string");
+  }
+  if (!config.relayToken || typeof config.relayToken !== "string") {
+    throw new Error("sendReply: relayToken is required and must be a non-empty string");
+  }
   const timeout = createTimeoutSignal(config.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
   try {

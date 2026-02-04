@@ -28,21 +28,68 @@ import { stripMarkdown } from "../kakao/response.js";
 interface UserActivity {
   messageCount: number;
   lastWarningCount: number;
+  lastAccessedAt: number;
 }
 
-const userActivity = new Map<string, UserActivity>();
+export const MAX_USER_ACTIVITY_SIZE = 10000;
+export const USER_ACTIVITY_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const CLEANUP_INTERVAL = 100; // Run cleanup every 100 message operations
+let cleanupCounter = 0;
+
+export const userActivity = new Map<string, UserActivity>();
+
+/**
+ * TTL 만료된 항목 정리
+ */
+export function cleanupExpiredUserActivity(): number {
+  const now = Date.now();
+  let removed = 0;
+  for (const [key, activity] of userActivity) {
+    if (now - activity.lastAccessedAt > USER_ACTIVITY_TTL_MS) {
+      userActivity.delete(key);
+      removed++;
+    }
+  }
+  return removed;
+}
+
+/**
+ * 주기적 정리 트리거 (매 CLEANUP_INTERVAL 호출마다)
+ */
+function maybeCleanup(): void {
+  cleanupCounter++;
+  if (cleanupCounter >= CLEANUP_INTERVAL) {
+    cleanupCounter = 0;
+    cleanupExpiredUserActivity();
+
+    // If still over max size after TTL cleanup, remove oldest entries
+    if (userActivity.size > MAX_USER_ACTIVITY_SIZE) {
+      const entries = [...userActivity.entries()].sort(
+        (a, b) => a[1].lastAccessedAt - b[1].lastAccessedAt
+      );
+      const toRemove = userActivity.size - MAX_USER_ACTIVITY_SIZE;
+      for (let i = 0; i < toRemove; i++) {
+        userActivity.delete(entries[i][0]);
+      }
+    }
+  }
+}
 
 /**
  * 사용자 활동 업데이트 및 경고 필요 여부 판단
  * 50개 메시지마다 경고하되, 마지막 경고 후 최소 50개 간격 유지
  */
-function shouldShowSessionWarning(userId: string): boolean {
+export function shouldShowSessionWarning(userId: string): boolean {
+  maybeCleanup();
+
   const activity = userActivity.get(userId) || {
     messageCount: 0,
     lastWarningCount: -50, // 첫 경고를 50개 시점에 표시하기 위함
+    lastAccessedAt: Date.now(),
   };
 
   activity.messageCount++;
+  activity.lastAccessedAt = Date.now();
   userActivity.set(userId, activity);
 
   // 50개 단위마다 체크 (50, 100, 150...)
@@ -63,7 +110,7 @@ function shouldShowSessionWarning(userId: string): boolean {
  * 메시지 텍스트에서 카카오 카드 JSON 감지
  * JSON 형태이고 카드 키가 있으면 파싱하여 반환
  */
-function tryParseKakaoCard(text: string): KakaoChannelData | null {
+export function tryParseKakaoCard(text: string): KakaoChannelData | null {
   const trimmed = text.trim();
 
   // JSON 형태가 아니면 스킵
@@ -74,15 +121,43 @@ function tryParseKakaoCard(text: string): KakaoChannelData | null {
   try {
     const parsed = JSON.parse(trimmed);
 
-    // 카카오 카드 키 목록
-    const cardKeys = [
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return null;
+    }
+
+    // 카카오 카드 키 목록 (object 값을 가져야 하는 키)
+    const objectCardKeys = [
       'textCard', 'basicCard', 'listCard',
       'commerceCard', 'itemCard', 'carousel',
-      'simpleText', 'simpleImage', 'quickReplies', 'outputs'
+      'simpleText', 'simpleImage',
     ];
 
-    // 카드 키가 하나라도 있으면 카드로 인식
-    if (cardKeys.some(key => key in parsed)) {
+    // 배열 값을 가져야 하는 키
+    const arrayCardKeys = ['quickReplies', 'outputs'];
+
+    let hasValidCard = false;
+
+    for (const key of objectCardKeys) {
+      if (key in parsed) {
+        if (typeof parsed[key] !== "object" || parsed[key] === null || Array.isArray(parsed[key])) {
+          // Invalid structure: card key must have an object value
+          return null;
+        }
+        hasValidCard = true;
+      }
+    }
+
+    for (const key of arrayCardKeys) {
+      if (key in parsed) {
+        if (!Array.isArray(parsed[key])) {
+          // Invalid structure: quickReplies/outputs must be arrays
+          return null;
+        }
+        hasValidCard = true;
+      }
+    }
+
+    if (hasValidCard) {
       return parsed as KakaoChannelData;
     }
   } catch {
@@ -651,7 +726,29 @@ async function handleInboundMessage(
 
     if (handler) {
       log?.info(`[kakao-talkchannel:${account.talkchannelId}] Plugin command: ${command}`);
-      await handler(msg, account, accountId, relayUrl, relayToken, log);
+      try {
+        await handler(msg, account, accountId, relayUrl, relayToken, log);
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        log?.error(`[kakao-talkchannel:${account.talkchannelId}] Command ${command} error: ${errMsg}`);
+
+        // Send error feedback to user
+        try {
+          await sendReply(
+            { relayUrl, relayToken },
+            msg.id,
+            {
+              version: "2.0",
+              template: {
+                outputs: [{ simpleText: { text: `명령어 처리 중 오류가 발생했습니다: ${errMsg}` } }],
+              },
+            }
+          );
+        } catch (replyErr) {
+          const replyErrMsg = replyErr instanceof Error ? replyErr.message : String(replyErr);
+          log?.error(`[kakao-talkchannel:${account.talkchannelId}] Failed to send error feedback: ${replyErrMsg}`);
+        }
+      }
       return; // 커맨드 처리 완료, OpenClaw로 디스패치 안 함
     }
   }
