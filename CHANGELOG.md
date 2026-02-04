@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/compare/kakao-talkchannel-v0.3.1...kakao-talkchannel-v0.3.2) (2026-02-04)
+
+
+### Bug Fixes
+
+* SSE 버퍼 파싱, 토큰 위생처리, 메모리 관리 등 코드 리뷰 이슈 수정 ([71f647c](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/commit/71f647c6619cc45686dfeeb02f18ecc2cc5479a7))
+
 ## [0.3.1](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/compare/kakao-talkchannel-v0.3.0...kakao-talkchannel-v0.3.1) (2026-02-04)
 
 
