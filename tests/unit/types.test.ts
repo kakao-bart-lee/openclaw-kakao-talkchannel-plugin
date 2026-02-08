@@ -2,12 +2,12 @@ import { describe, it, expect } from "vitest";
 import type {
   KakaoSkillPayload,
   KakaoSkillResponse,
-  KakaoChannelConfig,
   ResolvedKakaoTalkChannel,
   KakaoButton,
   KakaoOsLink,
   InboundMessage,
 } from "../../src/types";
+import type { KakaoAccountConfig } from "../../src/config/schema";
 
 describe("Kakao Types", () => {
   describe("KakaoSkillPayload", () => {
@@ -80,24 +80,35 @@ describe("Kakao Types", () => {
     });
   });
 
-  describe("KakaoChannelConfig", () => {
-    it("should have required fields", () => {
-      const config: KakaoChannelConfig = {
+  describe("KakaoAccountConfig (Zod-inferred)", () => {
+    it("should have required fields with defaults applied", () => {
+      const config: KakaoAccountConfig = {
         enabled: true,
         dmPolicy: "pairing",
+        relayUrl: "https://k.tess.dev/",
+        reconnectDelayMs: 1000,
+        maxReconnectDelayMs: 30000,
+        textChunkLimit: 400,
+        chunkMode: "sentence",
       };
       expect(config.enabled).toBe(true);
     });
 
-    it("should support relay mode fields", () => {
-      const config: KakaoChannelConfig = {
+    it("should support optional fields", () => {
+      const config: KakaoAccountConfig = {
         enabled: true,
         channelId: "channel123",
         dmPolicy: "pairing",
         relayUrl: "https://relay.example.com",
         relayToken: "token123",
+        responsePrefix: "[카카오] ",
+        reconnectDelayMs: 1000,
+        maxReconnectDelayMs: 30000,
+        textChunkLimit: 400,
+        chunkMode: "sentence",
       };
       expect(config.relayUrl).toBeDefined();
+      expect(config.responsePrefix).toBe("[카카오] ");
     });
   });
 
@@ -108,6 +119,11 @@ describe("Kakao Types", () => {
         config: {
           enabled: true,
           dmPolicy: "pairing",
+          relayUrl: "https://k.tess.dev/",
+          reconnectDelayMs: 1000,
+          maxReconnectDelayMs: 30000,
+          textChunkLimit: 400,
+          chunkMode: "sentence",
         },
         enabled: true,
         name: "Test Account",

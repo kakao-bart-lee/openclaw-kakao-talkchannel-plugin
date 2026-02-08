@@ -5,7 +5,7 @@
  * Uses OpenClaw standard accounts structure: channels.kakao-talkchannel.accounts.<accountId>
  */
 
-import type { ResolvedKakaoTalkChannel, KakaoChannelConfig } from "../types.js";
+import type { ResolvedKakaoTalkChannel } from "../types.js";
 import { KakaoAccountConfigSchema } from "../config/schema.js";
 
 /**
@@ -50,16 +50,16 @@ function getAccounts(cfg: unknown): ConfigObject {
  * Get account config by accountId
  * Falls back to default account if not found
  */
-function getAccountConfig(cfg: unknown, accountId: string): KakaoChannelConfig {
+function getAccountConfig(cfg: unknown, accountId: string): unknown {
   const accounts = getAccounts(cfg);
   const account = accounts[accountId];
 
   if (account && typeof account === "object") {
-    return account as KakaoChannelConfig;
+    return account;
   }
 
   // Return empty object - schema will apply defaults
-  return {} as KakaoChannelConfig;
+  return {};
 }
 
 /**

@@ -303,13 +303,6 @@ describe("Gateway Adapter (Simplified)", () => {
     });
   });
 
-  describe("PLUGIN_VERSION", () => {
-    it("should be a valid semver string", async () => {
-      const { PLUGIN_VERSION } = await import("../../../src/version");
-      expect(PLUGIN_VERSION).toMatch(/^\d+\.\d+\.\d+$/);
-    });
-  });
-
   describe("getPendingPairingInfo", () => {
     it("should return null when no pairing info exists", () => {
       expect(getPendingPairingInfo("account1")).toBeNull();

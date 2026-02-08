@@ -282,39 +282,12 @@ export interface KakaoSkillResponse {
 // Plugin Configuration Types (Simplified: Relay mode only)
 // ============================================================================
 
-export type KakaoDmPolicy = "pairing" | "allowlist" | "open" | "disabled";
-
-export interface KakaoChannelConfig {
-  // 사용자 설정
-  enabled: boolean;
-  dmPolicy: KakaoDmPolicy;
-  allowFrom?: string[];
-  responsePrefix?: string;
-
-  // 고급 설정 (대부분 불필요)
-  /** @advanced */
-  channelId?: string;
-  /** @advanced */
-  relayUrl?: string;
-  /** @advanced */
-  relayToken?: string;
-
-  // 내부 설정 (자동 관리)
-  /** @internal */
-  sessionToken?: string;
-  /** @internal */
-  reconnectDelayMs?: number;
-  /** @internal */
-  maxReconnectDelayMs?: number;
-
-  // 텍스트 처리 설정
-  textChunkLimit?: number;
-  chunkMode?: "sentence" | "newline" | "length";
-}
+// 계정 설정 타입은 Zod 스키마에서 추론 (src/config/schema.ts)
+import type { KakaoAccountConfig } from "./config/schema.js";
 
 export interface ResolvedKakaoTalkChannel {
   talkchannelId: string; // Always "default" for single channel (kept for future extensibility)
-  config: KakaoChannelConfig;
+  config: KakaoAccountConfig;
   enabled: boolean;
   name?: string;
   channelId?: string; // Optional (from config)
