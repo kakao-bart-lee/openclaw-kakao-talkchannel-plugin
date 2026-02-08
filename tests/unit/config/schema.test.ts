@@ -215,6 +215,27 @@ describe("Config Schema (Simplified)", () => {
       const result = KakaoAccountConfigSchema.safeParse(config);
       expect(result.success).toBe(false);
     });
+
+    it("should accept responsePrefix as string", () => {
+      const result = KakaoAccountConfigSchema.safeParse({ responsePrefix: "[카카오] " });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.responsePrefix).toBe("[카카오] ");
+      }
+    });
+
+    it("should allow responsePrefix to be omitted", () => {
+      const result = KakaoAccountConfigSchema.safeParse({});
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.responsePrefix).toBeUndefined();
+      }
+    });
+
+    it("should reject non-string responsePrefix", () => {
+      const result = KakaoAccountConfigSchema.safeParse({ responsePrefix: 123 });
+      expect(result.success).toBe(false);
+    });
   });
 
   describe("KakaoChannelConfigSchema (wrapper)", () => {

@@ -20,6 +20,7 @@ import { startRelayStream, type StreamCallbacks } from "../relay/stream.js";
 import { getKakaoRuntime } from "../runtime.js";
 import { sendReply } from "../relay/client.js";
 import { stripMarkdown } from "../kakao/response.js";
+import { PLUGIN_VERSION } from "../version.js";
 
 /**
  * 사용자별 메시지 활동 추적
@@ -524,7 +525,7 @@ async function handleAboutCommand(
             items: [
               {
                 title: "버전",
-                description: "v0.3.0"
+                description: `v${PLUGIN_VERSION}`
               },
               {
                 title: "패키지",

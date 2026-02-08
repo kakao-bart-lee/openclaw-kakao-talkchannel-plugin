@@ -24,6 +24,9 @@ export const KakaoAccountConfigSchema = z.object({
   /** dmPolicy가 "allowlist"일 때 허용할 사용자 ID 목록 */
   allowFrom: z.array(z.string()).optional(),
 
+  /** 응답 접두사 — OpenClaw 코어가 에이전트 응답 앞에 자동 삽입 */
+  responsePrefix: z.string().optional(),
+
   // ─────────────────────────────────────────────────────────────
   // 고급 설정 (대부분의 사용자는 설정 불필요)
   // ─────────────────────────────────────────────────────────────

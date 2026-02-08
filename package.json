@@ -40,6 +40,9 @@
       "order": 80,
       "quickstartAllowFrom": false
     },
+    "compatibility": {
+      "testedWith": "2026.2.6"
+    },
     "install": {
       "npmSpec": "@openclaw/kakao-talkchannel",
       "localPath": "extensions/kakao-talkchannel",
@@ -50,7 +53,7 @@
     "zod": "^3.22.0"
   },
   "peerDependencies": {
-    "openclaw": "*"
+    "openclaw": ">=2026.1.29"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

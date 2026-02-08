@@ -49,6 +49,10 @@
               "default": "pairing",
               "description": "DM policy for unauthorized users"
             },
+            "responsePrefix": {
+              "type": "string",
+              "description": "Prefix prepended to agent responses by OpenClaw core"
+            },
             "allowFrom": {
               "type": "array",
               "items": {
@@ -81,6 +85,10 @@
     },
     "accounts.*.dmPolicy": {
       "label": "DM Policy"
+    },
+    "accounts.*.responsePrefix": {
+      "label": "Response Prefix",
+      "placeholder": "[카카오] "
     }
   }
 }

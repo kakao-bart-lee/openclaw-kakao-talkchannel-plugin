@@ -289,6 +289,7 @@ export interface KakaoChannelConfig {
   enabled: boolean;
   dmPolicy: KakaoDmPolicy;
   allowFrom?: string[];
+  responsePrefix?: string;
 
   // 고급 설정 (대부분 불필요)
   /** @advanced */

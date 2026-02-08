@@ -10,7 +10,8 @@
       "draft": false,
       "prerelease": false,
       "extra-files": [
-        "openclaw.plugin.json"
+        "openclaw.plugin.json",
+        "src/version.ts"
       ]
     }
   }
