@@ -1,7 +1,7 @@
 {
   "id": "kakao-talkchannel",
   "name": "Kakao TalkChannel",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Kakao TalkChannel integration for OpenClaw",
   "main": "index.ts",
   "channels": [

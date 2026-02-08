@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/compare/kakao-talkchannel-v0.3.2...kakao-talkchannel-v0.4.0) (2026-02-08)
+
+
+### Features
+
+* OpenClaw v2026.2.6 호환성 업데이트 및 responsePrefix 지원 ([#21](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/issues/21)) ([b94664f](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/commit/b94664f190e15b4536e38f1f1ad65d8b327bff51))
+
 ## [0.3.2](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/compare/kakao-talkchannel-v0.3.1...kakao-talkchannel-v0.3.2) (2026-02-04)
 
 
