@@ -65,4 +65,11 @@ describe("kakaoPlugin", () => {
     expect(kakaoPlugin).toHaveProperty("security");
     expect(kakaoPlugin).toHaveProperty("pairing");
   });
+
+  it("has commands array with statusCommand", () => {
+    expect(kakaoPlugin.commands).toBeDefined();
+    expect(Array.isArray(kakaoPlugin.commands)).toBe(true);
+    expect(kakaoPlugin.commands.length).toBeGreaterThan(0);
+    expect(kakaoPlugin.commands[0].name).toBe("status");
+  });
 });

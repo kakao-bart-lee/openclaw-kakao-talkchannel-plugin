@@ -9,6 +9,7 @@ import { describe, it, expect } from "vitest";
 import type {
   ChannelOutboundAdapter,
   OutboundContext,
+  SendPayloadContext,
 } from "../../../src/adapters/outbound.js";
 import {
   outboundAdapter,
@@ -337,6 +338,39 @@ describe("outboundAdapter.sendMedia", () => {
       mediaUrl: "https://example.com/image.jpg",
     };
     const result = outboundAdapter.sendMedia!(ctx);
+    expect(result instanceof Promise).toBe(true);
+  });
+});
+
+// ============================================================================
+// Test Suite: sendPayload Method
+// ============================================================================
+
+describe("outboundAdapter.sendPayload", () => {
+  const createPayloadContext = (): SendPayloadContext => ({
+    to: "user_123",
+    talkchannelId: "test-account-123",
+    talkchannel: mockTalkChannel,
+    messageId: "msg_001",
+    response: {
+      version: "2.0",
+      template: { outputs: [{ simpleText: { text: "hello" } }] },
+    },
+  });
+
+  it("should be defined", () => {
+    expect(outboundAdapter.sendPayload).toBeDefined();
+  });
+
+  it("should return OutboundResult with success flag", async () => {
+    const result = await outboundAdapter.sendPayload!(createPayloadContext());
+
+    expect(result.success).toBe(true);
+    expect(result.channel).toBe("kakao-talkchannel");
+  });
+
+  it("should be an async function", () => {
+    const result = outboundAdapter.sendPayload!(createPayloadContext());
     expect(result instanceof Promise).toBe(true);
   });
 });
