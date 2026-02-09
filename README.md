@@ -260,6 +260,30 @@ openclaw plugins install {경로}
 
 ---
 
+## 보안
+
+### 토큰 관리
+
+- `relayToken`과 `sessionToken`은 민감 정보로 취급됩니다 (`sensitive: true`)
+- 환경변수 `OPENCLAW_TALKCHANNEL_RELAY_TOKEN` 사용을 권장합니다
+- 설정 파일에 토큰을 직접 기록할 경우 파일 권한에 주의하세요
+
+### 릴레이 서버 URL
+
+- `relayUrl`에는 **HTTPS URL만 사용**하세요
+- 내부 네트워크 주소(예: `localhost`, `127.0.0.1`, `10.x.x.x`)를 릴레이 URL로 사용하지 마세요
+- 자체 릴레이 서버 배포 시 공인 HTTPS 엔드포인트를 사용하세요
+
+### OpenClaw 보안 스캐너
+
+이 플러그인은 OpenClaw v2026.2.1+ 보안 스캐너와 호환됩니다:
+
+- `eval()`, `Function()` 등 동적 코드 실행 없음
+- 민감 필드에 `sensitive: true` 표시 (`openclaw.plugin.json`)
+- health check 응답에서 토큰 값을 노출하지 않음
+
+---
+
 ## 라이선스
 
 MIT
