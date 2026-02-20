@@ -41,7 +41,7 @@
       "quickstartAllowFrom": false
     },
     "compatibility": {
-      "testedWith": "2026.2.13"
+      "testedWith": "2026.2.20"
     },
     "install": {
       "npmSpec": "@openclaw/kakao-talkchannel",

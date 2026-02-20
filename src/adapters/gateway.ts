@@ -23,6 +23,7 @@ import { sendReply, RelayHttpError } from "../relay/client.js";
 import { stripMarkdown } from "../kakao/response.js";
 import { PLUGIN_VERSION } from "../version.js";
 import { DEFAULT_RELAY_URL } from "../config/schema.js";
+import { handleCardCommand } from "../commands/card.js";
 
 /**
  * 사용자별 메시지 활동 추적
@@ -727,6 +728,7 @@ const PLUGIN_COMMANDS: Record<string, CommandHandler> = {
   '/relay': handleRelayCommand,
   '/session': handleSessionCommand,
   '/s': handleSessionCommand,  // session 단축키
+  '/card': handleCardCommand,
 };
 
 /**
