@@ -355,6 +355,18 @@ describe("buildCommerceCard", () => {
     expect(card.title).toContain("사용법");
   });
 
+  it("returns usage error for non-numeric discount", () => {
+    const result = buildCommerceCard(["상품명"], { ...BASE_FLAGS, discount: "abc" });
+    const card = (result.template?.outputs[0] as any).textCard;
+    expect(card.title).toContain("사용법");
+  });
+
+  it("does not include discount when not provided", () => {
+    const result = buildCommerceCard(["상품명"], BASE_FLAGS);
+    const card = (result.template?.outputs[0] as any).commerceCard;
+    expect(card.discount).toBeUndefined();
+  });
+
   it("includes buttons when provided", () => {
     const result = buildCommerceCard(["상품명"], {
       ...BASE_FLAGS,

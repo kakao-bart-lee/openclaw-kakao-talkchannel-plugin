@@ -7,7 +7,7 @@
  *   /card text "제목" "설명" [--buttons "버튼1|url,버튼2|msg"] [--quick "옵션1,옵션2"]
  *   /card basic "제목" "설명" --image <url> [--buttons "버튼|url"] [--quick "옵션1,옵션2"]
  *   /card list "헤더" "항목1|설명1,항목2|설명2" [--buttons "버튼|url"] [--quick "옵션1,옵션2"]
- *   /card commerce "상품명" --price 15000 [--description "설명"] [--discount 2000] [--image <url>] [--buttons "버튼|url"]
+ *   /card commerce "상품명" --price 15000 --image <url> [--description "설명"] [--discount 2000] [--buttons "버튼|url"]
  */
 
 import type {
@@ -311,7 +311,15 @@ export function buildCommerceCard(
   }
 
   const description = flags.description ?? args[1];
-  const discount = flags.discount ? parseInt(flags.discount, 10) : undefined;
+
+  let discount: number | undefined;
+  if (flags.discount !== undefined) {
+    discount = parseInt(flags.discount, 10);
+    if (isNaN(discount)) {
+      return buildUsageError("commerce", "할인 금액은 숫자여야 합니다. 예: --discount 2000");
+    }
+  }
+
   const buttons = flags.buttons ? parseButtons(flags.buttons) : undefined;
   const quickReplies = flags.quick ? parseQuickReplies(flags.quick) : undefined;
 
@@ -325,7 +333,7 @@ export function buildCommerceCard(
             ...(description && { description }),
             price,
             currency: "won",
-            ...(discount !== undefined && !isNaN(discount) && { discount }),
+            ...(discount !== undefined && { discount }),
             thumbnails: [{ imageUrl }],
             ...(buttons?.length && { buttons }),
           },
