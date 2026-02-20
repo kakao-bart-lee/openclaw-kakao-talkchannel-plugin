@@ -277,6 +277,8 @@ describe("Relay Stream", () => {
         await startRelayStream(mockAccount, vi.fn(), controller.signal, {}, { onConnected });
       } catch { /* expected */ }
 
+      // vi.doMock + dynamic import may not replace an already-cached ESM module;
+      // guard ensures the assertion only runs when the mock took effect.
       if (mockConnectSSE.mock.calls.length > 0) {
         const handlers = mockConnectSSE.mock.calls[0][1];
         expect(typeof handlers.onConnected).toBe("function");
@@ -307,6 +309,8 @@ describe("Relay Stream", () => {
         await startRelayStream(mockAccount, vi.fn(), controller.signal, {}, { onDisconnected });
       } catch { /* expected */ }
 
+      // vi.doMock + dynamic import may not replace an already-cached ESM module;
+      // guard ensures the assertion only runs when the mock took effect.
       if (mockConnectSSE.mock.calls.length > 0) {
         const handlers = mockConnectSSE.mock.calls[0][1];
         expect(typeof handlers.onDisconnected).toBe("function");

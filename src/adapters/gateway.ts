@@ -15,8 +15,8 @@ import type {
   KakaoOutput,
   KakaoChannelData,
   DeliverPayload,
+  ChannelAccountSnapshot,
 } from "../types.js";
-import type { ChannelAccountSnapshot } from "../types.js";
 import { startRelayStream, type StreamCallbacks } from "../relay/stream.js";
 import { getKakaoRuntime } from "../runtime.js";
 import { sendReply, RelayHttpError } from "../relay/client.js";
