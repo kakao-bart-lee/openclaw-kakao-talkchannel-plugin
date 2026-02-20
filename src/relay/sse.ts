@@ -9,6 +9,7 @@ export interface SSEHandlers {
   onError?: (error: Error) => void;
   onReconnect?: (attempt: number) => void;
   onConnected?: () => void;
+  onDisconnected?: () => void;
   onPairingComplete?: (data: { kakaoUserId: string; pairedAt: string }) => void;
   onPairingExpired?: (reason: string) => void;
   onSessionInvalidated?: (status: number) => void;
@@ -218,6 +219,7 @@ export async function connectSSE(
       }
 
       handlers.onError?.(err);
+      handlers.onDisconnected?.();
 
       reconnectAttempt++;
       handlers.onReconnect?.(reconnectAttempt);

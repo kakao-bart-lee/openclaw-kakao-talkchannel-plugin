@@ -423,3 +423,25 @@ export interface DeliverPayload {
     kakao?: KakaoChannelData;
   };
 }
+
+// ============================================================================
+// Channel Account Snapshot (matches openclaw/plugin-sdk ChannelAccountSnapshot)
+// ============================================================================
+
+/**
+ * Runtime snapshot of a channel account.
+ * Shape-compatible with ChannelAccountSnapshot from openclaw/plugin-sdk.
+ */
+export interface ChannelAccountSnapshot {
+  accountId: string;
+  name?: string;
+  enabled?: boolean;
+  configured?: boolean;
+  running?: boolean;
+  connected?: boolean;
+  lastStartAt?: number | null;
+  lastStopAt?: number | null;
+  lastError?: string | null;
+  lastInboundAt?: number | null;
+  lastOutboundAt?: number | null;
+}

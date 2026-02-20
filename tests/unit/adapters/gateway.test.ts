@@ -201,6 +201,89 @@ describe("Gateway Adapter (Simplified)", () => {
     });
   });
 
+  describe("startAccount setStatus (health monitor integration)", () => {
+    it("should call ctx.setStatus({ connected: true }) when SSE connects", async () => {
+      const { startRelayStream } = await import("../../../src/relay/stream.js");
+      const mockStartRelayStream = vi.mocked(startRelayStream);
+
+      mockStartRelayStream.mockImplementationOnce(
+        async (_account, _onMessage, _signal, _opts, callbacks) => {
+          callbacks?.onConnected?.();
+        }
+      );
+
+      const currentSnapshot = { accountId: "default", running: true };
+      const mockGetStatus = vi.fn().mockReturnValue(currentSnapshot);
+      const mockSetStatus = vi.fn();
+
+      await gatewayAdapter.startAccount({
+        account: mockAccount,
+        accountId: "default",
+        cfg: {},
+        abortSignal: new AbortController().signal,
+        log: mockLog,
+        getStatus: mockGetStatus,
+        setStatus: mockSetStatus,
+      } as any);
+
+      expect(mockSetStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ connected: true })
+      );
+    });
+
+    it("should call ctx.setStatus({ connected: false }) when SSE disconnects", async () => {
+      const { startRelayStream } = await import("../../../src/relay/stream.js");
+      const mockStartRelayStream = vi.mocked(startRelayStream);
+
+      mockStartRelayStream.mockImplementationOnce(
+        async (_account, _onMessage, _signal, _opts, callbacks) => {
+          callbacks?.onDisconnected?.();
+        }
+      );
+
+      const currentSnapshot = { accountId: "default", running: true };
+      const mockGetStatus = vi.fn().mockReturnValue(currentSnapshot);
+      const mockSetStatus = vi.fn();
+
+      await gatewayAdapter.startAccount({
+        account: mockAccount,
+        accountId: "default",
+        cfg: {},
+        abortSignal: new AbortController().signal,
+        log: mockLog,
+        getStatus: mockGetStatus,
+        setStatus: mockSetStatus,
+      } as any);
+
+      expect(mockSetStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ connected: false })
+      );
+    });
+
+    it("should work without getStatus/setStatus (backward compat)", async () => {
+      const { startRelayStream } = await import("../../../src/relay/stream.js");
+      const mockStartRelayStream = vi.mocked(startRelayStream);
+
+      mockStartRelayStream.mockImplementationOnce(
+        async (_account, _onMessage, _signal, _opts, callbacks) => {
+          callbacks?.onConnected?.();
+          callbacks?.onDisconnected?.();
+        }
+      );
+
+      // Should not throw when getStatus/setStatus are absent
+      await expect(
+        gatewayAdapter.startAccount({
+          account: mockAccount,
+          accountId: "default",
+          cfg: {},
+          abortSignal: new AbortController().signal,
+          log: mockLog,
+        } as any)
+      ).resolves.toBeUndefined();
+    });
+  });
+
   describe("startAccount session invalidation", () => {
     it("should invalidate token on onSessionInvalidated callback", async () => {
       const { startRelayStream } = await import("../../../src/relay/stream.js");

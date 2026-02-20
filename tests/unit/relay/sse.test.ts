@@ -355,4 +355,110 @@ data: {"id":"msg_1"}`;
       }
     });
   });
+
+  describe("connectSSE onDisconnected", () => {
+    it("should call onDisconnected when connection drops before reconnect", async () => {
+      const { connectSSE } = await import("../../../src/relay/sse");
+
+      const originalFetch = globalThis.fetch;
+      // First call fails → triggers onDisconnected before reconnect; second call also fails → maxRetries hit
+      globalThis.fetch = vi.fn().mockRejectedValue(new Error("Connection reset"));
+
+      const controller = new AbortController();
+      const onDisconnected = vi.fn();
+      const onError = vi.fn();
+
+      try {
+        await expect(
+          connectSSE(
+            {
+              relayUrl: "https://example.com",
+              sessionToken: "test-token",
+              reconnectDelayMs: 1,
+              maxReconnectDelayMs: 1,
+              maxRetries: 1,
+            },
+            {
+              onMessage: vi.fn(),
+              onDisconnected,
+              onError,
+            },
+            controller.signal
+          )
+        ).rejects.toThrow();
+
+        expect(onDisconnected).toHaveBeenCalledTimes(1);
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    it("should NOT call onDisconnected on 401 session invalidation", async () => {
+      const { connectSSE } = await import("../../../src/relay/sse");
+
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        statusText: "Unauthorized",
+      });
+
+      const controller = new AbortController();
+      const onDisconnected = vi.fn();
+      const onSessionInvalidated = vi.fn();
+
+      try {
+        await expect(
+          connectSSE(
+            {
+              relayUrl: "https://example.com",
+              sessionToken: "expired-token",
+              reconnectDelayMs: 1,
+              maxReconnectDelayMs: 1,
+              maxRetries: 3,
+            },
+            {
+              onMessage: vi.fn(),
+              onDisconnected,
+              onSessionInvalidated,
+            },
+            controller.signal
+          )
+        ).rejects.toThrow("SSE session invalidated");
+
+        expect(onDisconnected).not.toHaveBeenCalled();
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    it("should NOT call onDisconnected when aborted", async () => {
+      const { connectSSE } = await import("../../../src/relay/sse");
+
+      const originalFetch = globalThis.fetch;
+      const controller = new AbortController();
+      controller.abort();
+
+      const onDisconnected = vi.fn();
+
+      globalThis.fetch = vi.fn().mockRejectedValue(new Error("aborted"));
+
+      try {
+        await connectSSE(
+          {
+            relayUrl: "https://example.com",
+            sessionToken: "test-token",
+            reconnectDelayMs: 1,
+            maxReconnectDelayMs: 1,
+          },
+          { onMessage: vi.fn(), onDisconnected },
+          controller.signal
+        );
+
+        expect(onDisconnected).not.toHaveBeenCalled();
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+  });
 });

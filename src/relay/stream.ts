@@ -13,6 +13,8 @@ export interface StreamCallbacks {
   onPairingExpired?: (reason: string) => void;
   onTokenResolved?: (sessionToken: string, relayUrl: string) => void;
   onSessionInvalidated?: (status: number) => void;
+  onConnected?: () => void;
+  onDisconnected?: () => void;
 }
 
 const DEFAULT_STREAM_OPTIONS: Required<StreamOptions> = {
@@ -115,6 +117,10 @@ export async function startRelayStream(
       },
       onConnected: () => {
         logger.info(`[kakao:${talkchannel.talkchannelId}] SSE connected to ${relayUrl}`);
+        callbacks.onConnected?.();
+      },
+      onDisconnected: () => {
+        callbacks.onDisconnected?.();
       },
       onError: (error) => {
         const sanitizedError = sanitizeTokenFromLog(error.message);

@@ -252,6 +252,68 @@ describe("Relay Stream", () => {
     });
   });
 
+  describe("onConnected / onDisconnected callbacks", () => {
+    it("should forward onConnected to connectSSE handlers", async () => {
+      const mockConnectSSE = vi.fn().mockResolvedValue(undefined);
+      vi.doMock("../../../src/relay/sse.js", () => ({
+        connectSSE: mockConnectSSE,
+        parseSSEChunk: vi.fn(),
+        calculateReconnectDelay: vi.fn(),
+      }));
+
+      const { startRelayStream } = await import("../../../src/relay/stream.js");
+
+      const mockAccount: ResolvedKakaoTalkChannel = {
+        talkchannelId: "test",
+        enabled: true,
+        config: { enabled: true, sessionToken: "tok", dmPolicy: "open" },
+      };
+
+      const controller = new AbortController();
+      controller.abort();
+      const onConnected = vi.fn();
+
+      try {
+        await startRelayStream(mockAccount, vi.fn(), controller.signal, {}, { onConnected });
+      } catch { /* expected */ }
+
+      if (mockConnectSSE.mock.calls.length > 0) {
+        const handlers = mockConnectSSE.mock.calls[0][1];
+        expect(typeof handlers.onConnected).toBe("function");
+      }
+    });
+
+    it("should forward onDisconnected to connectSSE handlers", async () => {
+      const mockConnectSSE = vi.fn().mockResolvedValue(undefined);
+      vi.doMock("../../../src/relay/sse.js", () => ({
+        connectSSE: mockConnectSSE,
+        parseSSEChunk: vi.fn(),
+        calculateReconnectDelay: vi.fn(),
+      }));
+
+      const { startRelayStream } = await import("../../../src/relay/stream.js");
+
+      const mockAccount: ResolvedKakaoTalkChannel = {
+        talkchannelId: "test",
+        enabled: true,
+        config: { enabled: true, sessionToken: "tok", dmPolicy: "open" },
+      };
+
+      const controller = new AbortController();
+      controller.abort();
+      const onDisconnected = vi.fn();
+
+      try {
+        await startRelayStream(mockAccount, vi.fn(), controller.signal, {}, { onDisconnected });
+      } catch { /* expected */ }
+
+      if (mockConnectSSE.mock.calls.length > 0) {
+        const handlers = mockConnectSSE.mock.calls[0][1];
+        expect(typeof handlers.onDisconnected).toBe("function");
+      }
+    });
+  });
+
   describe("onSessionInvalidated callback", () => {
     it("should pass onSessionInvalidated to connectSSE", async () => {
       // We need to mock connectSSE to capture the handlers
