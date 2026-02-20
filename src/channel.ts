@@ -14,6 +14,7 @@ import { pairingAdapter } from "./adapters/pairing.js";
 import { gatewayAdapter, getPendingPairingInfo } from "./adapters/gateway.js";
 import { setupAdapter } from "./adapters/setup.js";
 import { KakaoChannelConfigSchema } from "./config/schema.js";
+import { statusCommand, type CommandDefinition } from "./commands/status.js";
 
 const meta = {
   id: "kakao-talkchannel",
@@ -45,6 +46,9 @@ export const kakaoPlugin = {
 
   reload: { configPrefixes: ["channels.kakao-talkchannel"] },
 
+  /** 향후 registerCommand 연동을 위한 커맨드 정의 목록 */
+  commands: [statusCommand],
+
   configSchema: {
     schema: KakaoChannelConfigSchema,
   },
@@ -68,6 +72,7 @@ export const kakaoPlugin = {
     blockStreaming: boolean;
   };
   reload: { configPrefixes: string[] };
+  commands: CommandDefinition[];
   configSchema: { schema: typeof KakaoChannelConfigSchema };
   config: typeof configAdapter;
   security: typeof securityAdapter;
