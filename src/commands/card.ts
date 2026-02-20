@@ -259,6 +259,10 @@ export function buildListCard(args: string[], flags: Record<string, string>): Ka
       return { title, ...(description && { description }) };
     });
 
+  if (items.length < 2) {
+    return buildUsageError("list", "listCard는 항목이 최소 2개 필요합니다. 예: \"항목1|설명1,항목2|설명2\"");
+  }
+
   const buttons = flags.buttons ? parseButtons(flags.buttons) : undefined;
   const quickReplies = flags.quick ? parseQuickReplies(flags.quick) : undefined;
 
@@ -298,9 +302,16 @@ export function buildCommerceCard(
     return buildUsageError("commerce", "가격은 숫자여야 합니다. 예: --price 15000");
   }
 
+  const imageUrl = flags.image;
+  if (!imageUrl) {
+    return buildUsageError(
+      "commerce",
+      '/card commerce "상품명" --price 15000 --image <url> [--description "설명"] [--discount 2000] [--buttons "버튼|url"]',
+    );
+  }
+
   const description = flags.description ?? args[1];
   const discount = flags.discount ? parseInt(flags.discount, 10) : undefined;
-  const imageUrl = flags.image;
   const buttons = flags.buttons ? parseButtons(flags.buttons) : undefined;
   const quickReplies = flags.quick ? parseQuickReplies(flags.quick) : undefined;
 
@@ -315,7 +326,7 @@ export function buildCommerceCard(
             price,
             currency: "won",
             ...(discount !== undefined && !isNaN(discount) && { discount }),
-            thumbnails: imageUrl ? [{ imageUrl }] : [],
+            thumbnails: [{ imageUrl }],
             ...(buttons?.length && { buttons }),
           },
         },
@@ -339,7 +350,7 @@ export function buildCardHelpResponse(): KakaoSkillResponse {
               { title: "/card list", description: '"헤더" "항목1|설명,항목2|설명" [--buttons]' },
               {
                 title: "/card commerce",
-                description: '"상품명" --price 15000 [--discount] [--image]',
+                description: '"상품명" --price 15000 --image <url> [--discount]',
               },
             ],
           },

@@ -286,6 +286,12 @@ describe("buildListCard", () => {
     const card = (result.template?.outputs[0] as any).textCard;
     expect(card.title).toContain("사용법");
   });
+
+  it("returns usage error when items count is less than 2", () => {
+    const result = buildListCard(["헤더", "항목하나만"], {});
+    const card = (result.template?.outputs[0] as any).textCard;
+    expect(card.title).toContain("사용법");
+  });
 });
 
 // ============================================================================
@@ -293,38 +299,32 @@ describe("buildListCard", () => {
 // ============================================================================
 
 describe("buildCommerceCard", () => {
-  it("builds commerceCard with title and price", () => {
-    const result = buildCommerceCard(["상품명"], { price: "15000" });
+  const BASE_FLAGS = { price: "15000", image: "https://example.com/img.jpg" };
+
+  it("builds commerceCard with title, price and image", () => {
+    const result = buildCommerceCard(["상품명"], BASE_FLAGS);
     const card = (result.template?.outputs[0] as any).commerceCard;
     expect(card.title).toBe("상품명");
     expect(card.price).toBe(15000);
     expect(card.currency).toBe("won");
+    expect(card.thumbnails[0].imageUrl).toBe("https://example.com/img.jpg");
   });
 
   it("includes discount when provided", () => {
-    const result = buildCommerceCard(["상품명"], { price: "15000", discount: "2000" });
+    const result = buildCommerceCard(["상품명"], { ...BASE_FLAGS, discount: "2000" });
     const card = (result.template?.outputs[0] as any).commerceCard;
     expect(card.discount).toBe(2000);
   });
 
-  it("includes thumbnail when --image is provided", () => {
-    const result = buildCommerceCard(["상품명"], {
-      price: "15000",
-      image: "https://example.com/img.jpg",
-    });
-    const card = (result.template?.outputs[0] as any).commerceCard;
-    expect(card.thumbnails[0].imageUrl).toBe("https://example.com/img.jpg");
-  });
-
   it("uses second positional arg as description", () => {
-    const result = buildCommerceCard(["상품명", "상품 설명"], { price: "15000" });
+    const result = buildCommerceCard(["상품명", "상품 설명"], BASE_FLAGS);
     const card = (result.template?.outputs[0] as any).commerceCard;
     expect(card.description).toBe("상품 설명");
   });
 
   it("prefers --description flag over positional arg", () => {
     const result = buildCommerceCard(["상품명", "위치 설명"], {
-      price: "15000",
+      ...BASE_FLAGS,
       description: "플래그 설명",
     });
     const card = (result.template?.outputs[0] as any).commerceCard;
@@ -332,26 +332,32 @@ describe("buildCommerceCard", () => {
   });
 
   it("returns usage error when title is missing", () => {
-    const result = buildCommerceCard([], { price: "15000" });
+    const result = buildCommerceCard([], BASE_FLAGS);
     const card = (result.template?.outputs[0] as any).textCard;
     expect(card.title).toContain("사용법");
   });
 
   it("returns usage error when price is missing", () => {
-    const result = buildCommerceCard(["상품명"], {});
+    const result = buildCommerceCard(["상품명"], { image: "https://example.com/img.jpg" });
     const card = (result.template?.outputs[0] as any).textCard;
     expect(card.title).toContain("사용법");
   });
 
   it("returns usage error for non-numeric price", () => {
-    const result = buildCommerceCard(["상품명"], { price: "abc" });
+    const result = buildCommerceCard(["상품명"], { ...BASE_FLAGS, price: "abc" });
+    const card = (result.template?.outputs[0] as any).textCard;
+    expect(card.title).toContain("사용법");
+  });
+
+  it("returns usage error when --image is missing", () => {
+    const result = buildCommerceCard(["상품명"], { price: "15000" });
     const card = (result.template?.outputs[0] as any).textCard;
     expect(card.title).toContain("사용법");
   });
 
   it("includes buttons when provided", () => {
     const result = buildCommerceCard(["상품명"], {
-      price: "15000",
+      ...BASE_FLAGS,
       buttons: "구매|https://shop.example.com",
     });
     const card = (result.template?.outputs[0] as any).commerceCard;
