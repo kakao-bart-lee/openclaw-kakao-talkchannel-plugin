@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/compare/kakao-talkchannel-v0.4.1...kakao-talkchannel-v0.5.0) (2026-02-20)
+
+
+### Features
+
+* /card 커맨드로 카카오 카드 메시지 빌드 지원 ([#39](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/issues/39)) ([1b65306](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/commit/1b6530668177b2c05fa99887612bad6aa34c61be))
+* 채널 헬스 모니터 연동을 위한 connected 상태 추적 구현 ([#37](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/issues/37)) ([e39bda9](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/commit/e39bda92cfbb80b21660b139260bd7ada6e128b8))
+
 ## [0.4.1](https://github.com/kakao-bart-lee/openclaw-kakao-talkchannel-plugin/compare/kakao-talkchannel-v0.4.0...kakao-talkchannel-v0.4.1) (2026-02-16)
 
 
