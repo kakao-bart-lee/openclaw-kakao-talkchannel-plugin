@@ -6,6 +6,7 @@
  */
 
 import type { ResolvedKakaoTalkChannel } from "./types.js";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { configAdapter } from "./adapters/config.js";
 import { outboundAdapter } from "./adapters/outbound.js";
 import { statusAdapter } from "./adapters/status.js";
@@ -46,7 +47,7 @@ export const kakaoPlugin = {
   reload: { configPrefixes: ["channels.kakao-talkchannel"] },
 
   configSchema: {
-    schema: KakaoChannelConfigSchema,
+    schema: zodToJsonSchema(KakaoChannelConfigSchema, { target: "jsonSchema7" }) as Record<string, unknown>,
   },
 
   config: configAdapter,
@@ -68,7 +69,7 @@ export const kakaoPlugin = {
     blockStreaming: boolean;
   };
   reload: { configPrefixes: string[] };
-  configSchema: { schema: typeof KakaoChannelConfigSchema };
+  configSchema: { schema: Record<string, unknown> };
   config: typeof configAdapter;
   security: typeof securityAdapter;
   outbound: typeof outboundAdapter;
