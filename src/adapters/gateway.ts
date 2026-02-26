@@ -610,7 +610,7 @@ async function handleRelayCommand(
       const responseTime = Date.now() - startTime;
       status = "✅ 정상";
       latency = `${responseTime}ms`;
-      sessionStatus = relayToken ? "페어링 완료" : "토큰 없음";
+      sessionStatus = "연결됨";
     } else {
       status = `⚠️ HTTP ${healthResponse.status}`;
     }
@@ -674,12 +674,13 @@ async function handleSessionCommand(
   const messageCount = activity?.messageCount || 0;
   const lastWarningCount = activity?.lastWarningCount || 0;
 
-  // 간단한 세션 정보
+  // 간단한 세션 정보 (토큰 존재 여부를 직접 노출하지 않음)
+  const connectionStatus = relayToken ? "✅" : "⚠️ 미연결";
   const sessionInfo =
     `메시지: ${messageCount}개\n` +
     `마지막 경고: ${lastWarningCount > 0 ? lastWarningCount + '개 시점' : '없음'}\n` +
     `페어링: ✅ ${userId}\n` +
-    `토큰: ${relayToken ? '연결됨' : '없음'}`;
+    `연결: ${connectionStatus}`;
 
   const response: KakaoSkillResponse = {
     version: "2.0",
