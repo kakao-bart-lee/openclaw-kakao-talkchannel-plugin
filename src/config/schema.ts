@@ -27,6 +27,11 @@ export const KakaoAccountConfigSchema = z.object({
   /**
    * 응답 접두사 — OpenClaw 코어가 configSchema에서 직접 읽어
    * 에이전트 응답 앞에 자동 삽입한다. 플러그인 런타임에서 별도 처리 불필요.
+   *
+   * 계단식 해석 (v2026.2.6+):
+   *   account-level → channel-level → global 순으로 우선순위 적용.
+   *   코어가 normalizeReplyPayload()에서 중복 삽입을 방지하므로
+   *   플러그인이 prefix를 직접 처리하면 안 된다.
    */
   responsePrefix: z.string().optional(),
 
