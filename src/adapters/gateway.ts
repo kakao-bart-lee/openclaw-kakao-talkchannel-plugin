@@ -8,6 +8,7 @@
  * SSE message → finalizeInboundContext → dispatchReplyWithBufferedBlockDispatcher
  */
 
+import type { PluginRuntime } from "openclaw/plugin-sdk";
 import type {
   ResolvedKakaoTalkChannel,
   InboundMessage,
@@ -223,6 +224,8 @@ export interface GatewayContext {
   };
   getStatus?: () => ChannelAccountSnapshot;
   setStatus?: (next: ChannelAccountSnapshot) => void;
+  /** @since openclaw 2026.3.2 */
+  channelRuntime?: PluginRuntime["channel"];
 }
 
 export interface StopAccountContext {
@@ -739,10 +742,10 @@ async function handleInboundMessage(
   account: ResolvedKakaoTalkChannel,
   accountId: string,
   cfg: unknown,
+  channelRuntime: GatewayContext["channelRuntime"],
   log?: GatewayContext["log"]
 ): Promise<void> {
-  const runtime = getKakaoRuntime();
-  const channel = runtime.channel;
+  const channel = channelRuntime ?? getKakaoRuntime().channel;
 
   log?.info(`[kakao-talkchannel:${account.talkchannelId}] Received message: ${msg.id}`);
 
@@ -958,7 +961,7 @@ export const gatewayAdapter = {
 
     // Message handler that dispatches to OpenClaw
     const onMessage = async (msg: InboundMessage): Promise<void> => {
-      await handleInboundMessage(msg, account, accountId, cfg, log);
+      await handleInboundMessage(msg, account, accountId, cfg, ctx.channelRuntime, log);
     };
 
     return startRelayStream(account, onMessage, abortSignal, {}, callbacks, log);
